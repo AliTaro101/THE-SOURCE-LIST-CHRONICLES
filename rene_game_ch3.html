@@ -1,0 +1,1086 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>RENE: SOURCE-LIST CHRONICLES — CH.3</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:#000;display:flex;justify-content:center;align-items:center;min-height:100vh;overflow:hidden;font-family:'Press Start 2P',monospace;}
+#wrap{position:relative;width:960px;height:640px;border:3px solid #aaddff;
+  box-shadow:0 0 50px #aaddff44,0 0 100px #aaddff22,inset 0 0 30px #0a1a2440;overflow:hidden;background:#000;}
+canvas{position:absolute;top:0;left:0;image-rendering:pixelated;cursor:crosshair;}
+#scan{position:absolute;top:0;left:0;width:100%;height:100%;
+  background:repeating-linear-gradient(to bottom,transparent 0px,transparent 3px,rgba(0,0,0,0.07) 3px,rgba(0,0,0,0.07) 4px);
+  pointer-events:none;z-index:20;}
+#vig{position:absolute;top:0;left:0;width:100%;height:100%;
+  background:radial-gradient(ellipse at 50% 40%,transparent 45%,rgba(0,0,0,0.45) 100%);
+  pointer-events:none;z-index:19;}
+.nav-btn{position:absolute;font-family:'Press Start 2P',monospace;font-size:9px;
+  background:rgba(0,0,18,0.92);border:2px solid #aaddff;color:#aaddff;
+  padding:9px 14px;cursor:pointer;z-index:60;letter-spacing:1px;
+  transition:all 0.15s;text-transform:uppercase;}
+.nav-btn:hover{background:#aaddff;color:#000;box-shadow:0 0 18px #aaddff;transform:translateY(-1px);}
+#btn-menu{top:10px;left:10px;border-color:#88aabb;color:#88aabb;font-size:7px;padding:6px 10px;}
+#btn-menu:hover{background:#88aabb;color:#000;box-shadow:0 0 12px #88aabb;}
+#btn-next{bottom:18px;right:18px;border-color:#ffdd00;color:#ffdd00;display:none;font-size:10px;animation:pulse 1.5s infinite;}
+#btn-next:hover{background:#ffdd00;color:#000;box-shadow:0 0 20px #ffdd00;}
+#btn-replay{bottom:18px;left:18px;border-color:#aaddff;color:#aaddff;display:none;}
+#btn-tryagain{bottom:18px;left:50%;transform:translateX(-50%);border-color:#ff6644;color:#ff6644;display:none;font-size:12px;padding:11px 22px;animation:pulse2 1.2s infinite;}
+#btn-tryagain:hover{background:#ff6644;color:#000;box-shadow:0 0 22px #ff6644;}
+#sfx-btn{top:10px;right:10px;font-size:7px;padding:6px 10px;border-color:#aaddff66;color:#aaddff;}
+#click-hint{position:absolute;bottom:115px;left:50%;transform:translateX(-50%);
+  font-family:'Press Start 2P',monospace;font-size:10px;color:#ffdd00;
+  background:rgba(0,0,18,0.9);border:1px solid #ffdd00;padding:8px 16px;z-index:55;display:none;pointer-events:none;animation:pulse 1s infinite;}
+@keyframes pulse{0%,100%{box-shadow:0 0 8px #ffdd0088;}50%{box-shadow:0 0 22px #ffdd00;}}
+@keyframes pulse2{0%,100%{box-shadow:0 0 8px #ff664488;opacity:.9;}50%{box-shadow:0 0 24px #ff6644;opacity:1;}}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <canvas id="gc" width="960" height="640"></canvas>
+  <div id="scan"></div>
+  <div id="vig"></div>
+  <button id="btn-menu" class="nav-btn" onclick="returnToMenu()">← MENU</button>
+  <button id="sfx-btn" class="nav-btn" onclick="toggleSFX()">🔊 SFX</button>
+  <button id="btn-replay" class="nav-btn" onclick="replayChapter()">↻ REPLAY</button>
+  <button id="btn-next" class="nav-btn" onclick="goToNextChapter()">CHAPTER 4 ▶</button>
+  <button id="btn-tryagain" class="nav-btn" onclick="tryAgain()">↻ TRY AGAIN</button>
+  <div id="click-hint">⚡ CLICK THE ACTIVE ANTON BEFORE HE VANISHES! ⚡</div>
+</div>
+<script>
+// ═══════════════════════════════════════════════════════════
+//   RENE: THE SOURCE-LIST CHRONICLES
+//   CHAPTER 3: THE PORTAL TANGO
+// ═══════════════════════════════════════════════════════════
+const C=document.getElementById('gc'),X=C.getContext('2d'),W=960,H=640;
+let tick=0,sfxOn=true,ac=null;
+
+// ── LAUNCHER COMMS + PROGRESS ──────────────────────────────
+function saveProgress(letter){try{const k='rene-king-progress';const cur=JSON.parse(localStorage.getItem(k)||'{"letters":[],"scores":{}}');if(!cur.letters.includes(letter))cur.letters.push(letter);cur.scores['ch3']=Math.max(cur.scores['ch3']||0,score);localStorage.setItem(k,JSON.stringify(cur));}catch(e){}}
+function loadProgress(){try{return JSON.parse(localStorage.getItem('rene-king-progress')||'{"letters":[],"scores":{}}');}catch(e){return{letters:[],scores:{}};}}
+function returnToMenu(){try{window.parent.postMessage({type:'RETURN_TO_LAUNCHER',from:'chapter3'},'*');}catch(e){}window.location.href='index.html';}
+function goToNextChapter(){try{window.parent.postMessage({type:'NEXT_CHAPTER',from:3,score,chillHP},'*');}catch(e){}window.location.href='rene_game_ch4.html';}
+function replayChapter(){resetGame();phase='title';}
+function tryAgain(){
+  phase='battle';chillHP=100;portalLatency=200;score=0;consultsCompleted=0;ticketSpawned=false;ticket=null;
+  activeAntons=[];P=[];PP=[];dlgQ=[];dlgC=null;loseTimer=0;shake=0;antonSpawnTimer=60;
+  pDlgT=0;antonChats=[];antonChatTimer=300;
+  S.lofi();
+}
+
+// ── AUDIO ──────────────────────────────────────────────────
+function getAC(){if(!ac)ac=new(window.AudioContext||window.webkitAudioContext)();return ac;}
+function toggleSFX(){sfxOn=!sfxOn;document.getElementById('sfx-btn').textContent=sfxOn?'🔊 SFX':'🔇 SFX';}
+function tone(f,ty,d,v=0.28,dl=0){if(!sfxOn)return;try{const a=getAC(),o=a.createOscillator(),g=a.createGain();
+  o.connect(g);g.connect(a.destination);o.type=ty;o.frequency.value=f;const t=a.currentTime+dl;
+  g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(v,t+0.01);g.gain.exponentialRampToValueAtTime(0.001,t+d);
+  o.start(t);o.stop(t+d+0.05);}catch(e){}}
+const S={
+  click:()=>{tone(880,'sine',.07,.22);tone(1320,'sine',.06,.16,.06);tone(1760,'sine',.08,.12,.1);},
+  miss:()=>{tone(280,'sawtooth',.1,.22);tone(180,'sawtooth',.08,.18,.06);},
+  spawn:()=>{tone(550,'triangle',.05,.18);tone(770,'sine',.08,.14,.04);},
+  teleport:()=>{tone(440,'sine',.06,.18);tone(660,'sine',.06,.14,.04);tone(880,'sine',.06,.12,.08);tone(1320,'sine',.08,.1,.12);},
+  consult:()=>{tone(660,'sine',.1,.22);tone(880,'sine',.08,.18,.06);tone(1100,'sine',.06,.14,.12);},
+  combo:n=>{const fs=[523,659,784,1047,1319,1568];tone(fs[Math.min(n,5)],'sine',.14,.28);},
+  ticket:()=>{[523,659,784,1047,1319,1568,2093].forEach((f,i)=>tone(f,'sine',.18,.3,i*.08));},
+  teams:()=>{tone(880,'sine',.06,.18);tone(1100,'sine',.08,.14,.06);tone(660,'sine',.05,.1,.12);},
+  ghost:()=>{tone(550,'triangle',.1,.18);tone(770,'sine',.08,.14,.07);tone(990,'sine',.06,.1,.14);},
+  dmg:()=>{tone(220,'sawtooth',.1,.32);tone(160,'square',.07,.2,.07);},
+  portalHum:()=>{tone(110,'sine',.4,.12);tone(165,'sine',.35,.1,.05);},
+  frag:()=>{[262,330,392,494,659,784,1047,1318].forEach((f,i)=>tone(f,'sine',.28,.32,i*.1));},
+  win:()=>{[523,587,659,784,880,784,659,587,523,659,784,1047].forEach((f,i)=>{if(f)tone(f,'square',.22,.25,i*.16);});},
+  lose:()=>{[440,392,349,330,294].forEach((f,i)=>tone(f,'sawtooth',.3,.3,i*.18));},
+  type:()=>{if(Math.random()<.5)tone(700+Math.random()*600,'square',.04,.04);},
+  lofi:()=>{if(!sfxOn)return;try{const a=getAC(),ns=[220,247,261,293,329,349,391],pt=[0,3,5,3,0,5,3,0];
+    pt.forEach((n,i)=>{const o=a.createOscillator(),g=a.createGain();o.connect(g);g.connect(a.destination);
+    o.type='sine';o.frequency.value=ns[n]*.5;const t=a.currentTime+i*.45;
+    g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.07,t+.06);g.gain.linearRampToValueAtTime(0,t+.35);
+    o.start(t);o.stop(t+.45);});}catch(e){}}
+};
+
+// ── TEXT HELPERS ───────────────────────────────────────────
+function txt(t,x,y,size,col,opts={}){
+  const {align='center',baseline='middle',shadow=null,bold=false,bg=null,bgPad=0,border=null}=opts;
+  X.save();X.textAlign=align;X.textBaseline=baseline;
+  X.font=(bold?'bold ':'')+size+'px "Press Start 2P"';
+  if(bg){const m=X.measureText(t);let bx=x;
+    if(align==='center')bx=x-m.width/2;else if(align==='right')bx=x-m.width;
+    const by=y-size/2,bw=m.width+bgPad*2,bh=size+bgPad*2;
+    X.fillStyle=bg;X.fillRect(bx-bgPad,by-bgPad,bw,bh);
+    if(border){X.strokeStyle=border;X.lineWidth=1;X.strokeRect(bx-bgPad,by-bgPad,bw,bh);}}
+  if(shadow){X.shadowColor=shadow;X.shadowBlur=8;}
+  X.fillStyle=col;X.fillText(t,x,y);X.restore();
+}
+function badge(t,x,y,size,col,bgCol='rgba(0,0,15,0.9)'){txt(t,x,y,size,col,{bg:bgCol,bgPad:5,border:col+'55',shadow:col,bold:true});}
+
+// ── PARTICLES ──────────────────────────────────────────────
+let P=[],PP=[];
+function sParts(x,y,c,n=10,sp=3,sz=4){for(let i=0;i<n;i++){const a=Math.random()*Math.PI*2,s2=sp*(.5+Math.random());P.push({x,y,vx:Math.cos(a)*s2,vy:Math.sin(a)*s2,c,l:50+Math.random()*30,ml:80,sz:sz*(.5+Math.random()*.5),g:.08});}}
+function sPop(x,y,t,c){PP.push({x,y,t,c,l:75,ml:75,vy:-1.3});}
+function uParts(){P.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.vy+=p.g;p.vx*=.96;p.l--;});P=P.filter(p=>p.l>0);PP.forEach(p=>{p.y+=p.vy;p.l--;});PP=PP.filter(p=>p.l>0);}
+function dParts(){P.forEach(p=>{X.globalAlpha=p.l/p.ml;X.fillStyle=p.c;const s=Math.round(p.sz);X.fillRect(Math.round(p.x-s/2),Math.round(p.y-s/2),s,s);});X.globalAlpha=1;
+  PP.forEach(p=>{X.globalAlpha=p.l/p.ml;badge(p.t,p.x,p.y,10,p.c,'rgba(0,0,12,0.85)');});X.globalAlpha=1;}
+
+// ── GAME STATE ─────────────────────────────────────────────
+let phase='title',chillHP=100,score=0,combo=0,shake=0;
+let portalLatency=200,maxLatency=1400;
+let consultsCompleted=0;
+const CONSULTS_NEEDED=10;
+let ticketSpawned=false,ticket=null;
+let vTimer=0,loseTimer=0,lofiT=0,pDlgT=0;
+let antonSpawnTimer=60,antonChatTimer=300;
+let fragCollected=[];
+let portalHum=0;
+
+// ── ANTON STATES ──────────────────────────────────────────
+let activeAntons=[];
+let floatingAntons=[]; // background decorative
+let peekingAntons=[]; // background decorative
+
+const CONSULT_TEXTS=['Source-List?','Need consult!','Behind you!','Process Q?','Teams msg!','Email check?','PO escalation!','Quick Q?','Already replied!','Synced btw!','Hi I am here!','Did you see?'];
+
+function initBgAntons(){
+  floatingAntons=[
+    {x:200,y:130,sz:.7,spd:.3,bob:0},
+    {x:430,y:115,sz:.6,spd:.25,bob:1.2},
+    {x:680,y:135,sz:.75,spd:.35,bob:2.4},
+    {x:850,y:125,sz:.65,spd:.28,bob:3.6},
+  ];
+  peekingAntons=[
+    {x:70,y:H-220,side:'left'},
+    {x:W-90,y:H-200,side:'right'},
+    {x:W-160,y:H-240,side:'right'},
+    {x:130,y:H-250,side:'left'},
+  ];
+}
+
+function spawnActiveAnton(){
+  const consult=CONSULT_TEXTS[Math.floor(Math.random()*CONSULT_TEXTS.length)];
+  // Spawn zones: middle area, avoiding Rene (~210) and Franka (~720)
+  const zones=[
+    {x:310,y:230},{x:400,y:280},{x:490,y:220},{x:560,y:290},
+    {x:620,y:240},{x:340,y:340},{x:480,y:360},{x:580,y:340},
+    {x:380,y:200},{x:550,y:200},{x:420,y:300},{x:520,y:260},
+  ];
+  const z=zones[Math.floor(Math.random()*zones.length)];
+  // Tune life based on difficulty progression
+  const baseLife=Math.max(48,72-Math.floor(consultsCompleted/2)*3);
+  activeAntons.push({
+    x:z.x+(Math.random()-.5)*40,
+    y:z.y+(Math.random()-.5)*30,
+    life:baseLife,maxLife:baseLife,
+    consultText:consult,clicked:false,
+    appearAnim:0,
+  });
+  S.spawn();
+}
+
+// ── ANTON TEAMS CHATS ─────────────────────────────────────
+let antonChats=[];
+const ANTON_MSGS=[
+  "Behind you 👻",
+  "Just sent the message — also here",
+  "Materialized at your desk btw",
+  "Synced with the portal",
+  "Need a consult? Already here",
+  "PO escalation incoming — hi",
+  "Did you check Teams? In your room",
+  "Replied to msg I haven't sent yet",
+  "Portal latency rising — on it",
+  "Phasing in & out — please hold",
+  "Multi-instance mode activated",
+  "I am everywhere. And nowhere.",
+  "*ghost noises* Also FYI",
+  "Teleported behind 3 people at once",
+  "Source-List check while you read this",
+];
+
+function spawnAntonChat(){
+  if(antonChats.length>=2)return;
+  const msg=ANTON_MSGS[Math.floor(Math.random()*ANTON_MSGS.length)];
+  antonChats.push({msg,life:280,maxLife:280,slideIn:0});
+  S.teams();
+}
+
+function drawAntonChats(){
+  let yPos=110;
+  antonChats.forEach((chat,i)=>{
+    chat.slideIn=Math.min(1,chat.slideIn+0.07);
+    const x=W-358+(1-chat.slideIn)*360;
+    const cy=yPos+i*68;
+    X.fillStyle='rgba(20,38,58,0.95)';X.fillRect(x,cy,348,58);
+    X.strokeStyle='#5588cc';X.lineWidth=2;X.strokeRect(x,cy,348,58);
+    X.fillStyle='#5588cc';X.fillRect(x,cy,348,3);
+    X.shadowColor='#5588cc';X.shadowBlur=12;X.fillRect(x,cy,348,3);X.shadowBlur=0;
+    X.fillStyle='#5b5fc7';X.fillRect(x+8,cy+10,40,40);
+    X.strokeStyle='#7b80e7';X.lineWidth=1;X.strokeRect(x+8,cy+10,40,40);
+    X.fillStyle='#fff';X.font='bold 20px "Press Start 2P"';X.textAlign='center';X.textBaseline='middle';X.fillText('T',x+28,cy+30);
+    X.fillStyle='#88ccff';X.font='bold 8px "Press Start 2P"';X.textAlign='left';X.textBaseline='top';X.fillText('💬 ANTON (TEAMS)',x+56,cy+10);
+    X.fillStyle='#ffffff';X.font='7px "Press Start 2P"';
+    const maxMW=288;
+    if(X.measureText(chat.msg).width<=maxMW){X.fillText(chat.msg,x+56,cy+25);}
+    else{const words=chat.msg.split(' ');let ln='',ly=cy+25;
+      for(let k=0;k<words.length;k++){const tl=ln+words[k]+' ';
+        if(X.measureText(tl).width>maxMW&&k>0){X.fillText(ln,x+56,ly);ln=words[k]+' ';ly+=11;}else ln=tl;}X.fillText(ln,x+56,ly);}
+    X.fillStyle='#88aabb';X.font='5px "Press Start 2P"';X.fillText('just now',x+56,cy+46);
+    X.fillStyle='#ff4444';X.shadowColor='#ff4444';X.shadowBlur=6;X.beginPath();X.arc(x+340,cy+8,4,0,Math.PI*2);X.fill();X.shadowBlur=0;
+    chat.life--;
+  });
+  antonChats=antonChats.filter(c=>c.life>0);
+}
+
+// ── DIALOGUE ───────────────────────────────────────────────
+let dlgQ=[],dlgC=null,dlgCI=0,dlgT=0;
+const DLG={
+  intro:[
+    {sp:'NARRATOR',col:'#ffdd00',tx:'14:30 PM. The Supply Chain Portal hums with blue electricity. The data flow ebbs and stutters. Reality glitches at the edges.'},
+    {sp:'NARRATOR',col:'#ffdd00',tx:'Franka — the newest team member, already a master of her craft — stands at the holographic terminal.'},
+    {sp:'FRANKA',col:'#aaccdd',tx:'Rene! Thank goodness you finished your boiled eggs. The portal is showing PHYSICAL LATENCY anomalies!'},
+    {sp:'FRANKA',col:'#aaccdd',tx:'Multiple Anton manifestations detected — he is appearing FASTER than the Teams notification API. It breaks network physics!'},
+    {sp:'RENE',col:'#00ffcc',tx:'*sips fresh coffee* I am aware, Franka. He appeared behind me 4 times this morning. Always 0.3 seconds after the message.'},
+    {sp:'ANTON 💬',col:'#aaddff',tx:'(Teams) I just sent the message about the latency. Also — *materializes behind Rene* — I am already here.'},
+    {sp:'RENE',col:'#00ffcc',tx:'*turns calmly* As predicted. Hello Anton. Also goodbye Anton. *Anton vanishes*'},
+    {sp:'ALIREZA',col:'#88ccff',tx:'SENSEI! Anton just appeared in THREE different rooms at once! He is multi-instancing! It is not physically possible!'},
+    {sp:'FRANKA',col:'#aaccdd',tx:'The latency is approaching 1400ms! We need to solve his consults FAST! Each ignored Anton increases portal lag!'},
+    {sp:'ANTON 👻',col:'#aaddff',tx:'(floats by) Need a consult? Behind you? PO escalation? Source-List check? Email check? *flickers*'},
+    {sp:'RENE',col:'#00ffcc',tx:'Patience. We will synchronize them all. *cracks knuckles* One rapid-manifestation at a time.'},
+    {sp:'SYSTEM',col:'#ff6644',tx:'⚠ RAPID-CONSULT MODE ACTIVATED! Click the GLOWING Anton before he vanishes! 10 successful consults = victory!'},
+  ],
+  story:[
+    {sp:'ANTON 💬',col:'#aaddff',tx:'(Teams) Did you try restarting? I already restarted it for you. Also: behind you.'},
+    {sp:'ANTON 💬',col:'#aaddff',tx:'I replied to your email before you sent it. Saved you a step. *appears, vanishes*'},
+    {sp:'RENE',col:'#00ffcc',tx:'*clicks Anton mid-bite-of-egg* Excellent. Next Anton, please. I have 6 more consults to handle.'},
+    {sp:'FRANKA',col:'#aaccdd',tx:'Beautiful work, Rene! The portal latency just dropped by 200ms! Keep clicking those Antons!'},
+    {sp:'ALIREZA',col:'#88ccff',tx:'Sensei... Anton just solved a Source-List issue I had NOT EVEN ENCOUNTERED YET. He pre-emptively fixed it.'},
+    {sp:'RENE',col:'#00ffcc',tx:'Anton operates in causally non-linear time. We accept this. We click him. We move on.'},
+    {sp:'ANTON 👻',col:'#aaddff',tx:'I am 5 places simultaneously right now. *waves from 5 directions* Hello Rene. Hello Rene. Hello Rene...'},
+    {sp:'FRANKA',col:'#aaccdd',tx:'Portal stabilizing! At this rate we will retrieve the Source-List Ticket in no time!'},
+    {sp:'ANTON 💬',col:'#aaddff',tx:'(Teams) FYI: I phased through 3 walls. Hope that is OK. Manager already notified. By me.'},
+    {sp:'RENE',col:'#00ffcc',tx:'Vincent has Excalibar. Alex has corner-kick goals. Anton has... omnipresence. Each one a wonder.'},
+  ],
+  ticket:[
+    {sp:'⚡ SYSTEM',col:'#ffdd00',tx:'10 CONSULTS SOLVED! Source-List Ticket has manifested in the portal! Click it to claim Fragment N!'},
+    {sp:'FRANKA',col:'#aaccdd',tx:'RENE! The ticket is materializing in the portal! Click it before the portal de-syncs!'},
+    {sp:'RENE',col:'#00ffcc',tx:'Acknowledged. *sets down coffee* *adjusts headband* Final step engaged.'},
+  ],
+  victory:[
+    {sp:'RENE',col:'#00ffcc',tx:'*claims ticket* Portal synchronized. Latency back to 50ms. All Antons consulted. Including the future ones.'},
+    {sp:'FRANKA',col:'#aaccdd',tx:'Incredible Rene! The portal is at full sync. The data flow is pristine. The Source-List is intact!'},
+    {sp:'ANTON 💬',col:'#aaddff',tx:'(Teams) Already filed the success report. Also: *materializes* I am here for the celebration. As always.'},
+    {sp:'RENE',col:'#00ffcc',tx:'Of course you are, Anton. *sips coffee* Welcome to the party you were always at.'},
+    {sp:'ALIREZA',col:'#88ccff',tx:'Three letters now. K. I. N. The destiny crystallizes. KIN — like family. Like team. ONE LETTER TO GO.'},
+    {sp:'SYSTEM',col:'#ffdd00',tx:'✨ FRAGMENT "N" OBTAINED! KIN — Rene\'s team-family is complete. K + I + N → one more to crown the KING. 👑'},
+  ],
+  lose:[
+    {sp:'⚠ ALERT',col:'#ff4444',tx:'PORTAL CRITICAL FAILURE! Physical latency exceeded 1400ms! Multiple Antons stuck in transit! REALITY UNSTABLE!'},
+    {sp:'FRANKA',col:'#aaccdd',tx:'Portal de-sync! I have a backup snapshot! We can restore from the last consistent state!'},
+    {sp:'ANTON 💬',col:'#aaddff',tx:'(Teams) Filed the portal failure ticket. Already drafting the recovery email. Also: behind you. As always.'},
+    {sp:'ALIREZA',col:'#88ccff',tx:'The portal collapsed because TOO MANY ANTONS! Even ANTON does not know how many Antons there were!'},
+    {sp:'RENE',col:'#00ffcc',tx:'*finishes coffee calmly* Acceptable. The portal will reset. The Antons will re-sync. Let us try again.'},
+    {sp:'SYSTEM',col:'#ff6644',tx:'Click ↻ TRY AGAIN below to re-initialize the portal and resume consult synchronization!'},
+  ],
+};
+function setDlg(k){dlgQ=[...DLG[k]];advDlg();}
+function advDlg(){if(!dlgQ.length){dlgC=null;return;}dlgC=dlgQ.shift();dlgCI=0;dlgT=0;}
+function pushDlg(d){dlgQ.push(d);if(!dlgC)advDlg();}
+
+function drawDlg(){
+  if(!dlgC)return;
+  if(phase==='victory'&&vTimer>180)return;
+  const bH=92,bY=H-bH;
+  X.fillStyle='rgba(2,4,18,0.97)';X.fillRect(0,bY,W,bH);
+  X.fillStyle=dlgC.col;X.fillRect(0,bY,W,4);
+  X.shadowColor=dlgC.col;X.shadowBlur=12;X.fillRect(0,bY,W,4);X.shadowBlur=0;
+  X.fillStyle=dlgC.col+'44';X.fillRect(0,bY+4,3,bH-4);X.fillRect(W-3,bY+4,3,bH-4);
+  X.font='bold 11px "Press Start 2P"';X.textAlign='left';X.textBaseline='middle';
+  const spText='['+dlgC.sp+']',spW=X.measureText(spText).width;
+  X.fillStyle=dlgC.col;X.fillRect(14,bY+14,spW+20,26);
+  X.fillStyle='rgba(0,0,12,0.95)';X.fillRect(16,bY+16,spW+16,22);
+  X.fillStyle=dlgC.col;X.shadowColor=dlgC.col;X.shadowBlur=8;X.fillText(spText,24,bY+27);X.shadowBlur=0;
+  const disp=dlgC.tx.slice(0,dlgCI);
+  X.fillStyle='#ffffff';X.font='9px "Press Start 2P"';X.textBaseline='top';
+  const words=disp.split(' '),maxTW=W-40;
+  let line='',ly=bY+50;
+  for(let i=0;i<words.length;i++){const tl=line+words[i]+' ';if(X.measureText(tl).width>maxTW&&i>0){X.fillText(line,20,ly);line=words[i]+' ';ly+=18;if(ly>H-12)break;}else line=tl;}
+  X.fillText(line,20,ly);
+  dlgT++;if(dlgT%2===0&&dlgCI<dlgC.tx.length){dlgCI++;if(dlgCI%3===0)S.type();}
+  if(dlgCI>=dlgC.tx.length&&Math.floor(tick/22)%2===0)badge('▼ CLICK / SPACE TO CONTINUE',W-150,bY+bH-14,7,'#aaddff','rgba(0,15,28,0.95)');
+}
+
+// ── BACKGROUND (Server Room w/ Circuit Floor) ──────────────
+function drawBG(){
+  // Sky gradient
+  const bg=X.createLinearGradient(0,0,0,H);bg.addColorStop(0,'#040810');bg.addColorStop(.55,'#08111e');bg.addColorStop(1,'#030608');
+  X.fillStyle=bg;X.fillRect(0,0,W,H);
+  // Wall grid
+  X.strokeStyle='#0a1828';X.lineWidth=1;
+  for(let x=0;x<W;x+=50){X.beginPath();X.moveTo(x,0);X.lineTo(x,H-100);X.stroke();}
+  for(let y=0;y<H-100;y+=50){X.beginPath();X.moveTo(0,y);X.lineTo(W,y);X.stroke();}
+  // Far wall darker
+  X.fillStyle='#08101a';X.fillRect(0,H-340,W,200);
+  // Door (left side)
+  X.fillStyle='#1a1a2a';X.fillRect(20,H-330,55,200);
+  X.fillStyle='#0a0a18';X.fillRect(24,H-325,47,190);
+  X.fillStyle='#222';X.fillRect(28,H-318,39,180);
+  // Door details
+  X.fillStyle='#3a3a4a';X.fillRect(55,H-200,3,8);
+  // Some pipes on wall
+  X.fillStyle='#2a2a3a';X.fillRect(0,H-360,W,8);X.fillRect(0,H-352,W,2);
+  // Server racks (right side)
+  const sracks=[{x:W-95,y:H-340,w:55,h:220},{x:W-165,y:H-340,w:55,h:220}];
+  sracks.forEach((s,i)=>{
+    X.fillStyle='#1a1a26';X.fillRect(s.x,s.y,s.w,s.h);
+    X.fillStyle='#0a0a14';X.fillRect(s.x+3,s.y+3,s.w-6,s.h-6);
+    for(let u=0;u<9;u++){
+      X.fillStyle='#222230';X.fillRect(s.x+6,s.y+8+u*22,s.w-12,18);
+      X.fillStyle='#0e0e18';X.fillRect(s.x+8,s.y+10+u*22,s.w-16,14);
+      const ledCol=Math.floor(tick/8+i*3+u)%3===0?'#00ff44':Math.floor(tick/8+i*3+u)%3===1?'#ffdd00':'#ff4444';
+      X.fillStyle=ledCol;X.shadowColor=ledCol;X.shadowBlur=6;
+      X.fillRect(s.x+s.w-14,s.y+13+u*22,3,3);X.fillRect(s.x+s.w-20,s.y+13+u*22,3,3);
+      X.shadowBlur=0;
+    }
+  });
+  // Wall posters
+  X.fillStyle='#1a2030';X.fillRect(110,90,55,70);
+  X.fillStyle='#88aabb';X.fillRect(115,95,45,8);
+  X.fillStyle='#5588cc';for(let i=0;i<3;i++)X.fillRect(115,108+i*16,45-i*10,3);
+  X.fillStyle='#1a2030';X.fillRect(190,80,50,60);
+  X.fillStyle='#5588cc';X.fillRect(195,85,40,8);
+  X.fillStyle='#88aabb';for(let i=0;i<4;i++)X.fillRect(195,98+i*10,40,2);
+  // Plant in corner
+  X.fillStyle='#2a1a08';X.fillRect(880,H-180,30,55);
+  X.fillStyle='#1e3a0a';X.fillRect(868,H-216,54,38);
+  X.fillStyle='#254c0c';X.fillRect(875,H-236,42,28);
+  // Printer/copier (background detail)
+  X.fillStyle='#3a3a4a';X.fillRect(35,H-150,60,40);
+  X.fillStyle='#4a4a5a';X.fillRect(35,H-150,60,8);
+  X.fillStyle='#1a1a2a';X.fillRect(40,H-140,50,20);
+  X.fillStyle='#00ff44';X.fillRect(80,H-145,3,3);
+  // Circuit floor pattern
+  X.fillStyle='#04060c';X.fillRect(0,H-140,W,140);
+  X.fillStyle='#0a1a3a';X.fillRect(0,H-140,W,140);
+  // Circuit traces
+  X.strokeStyle='#1a4a7a';X.lineWidth=1;
+  for(let i=0;i<8;i++){const cy=H-130+i*16;
+    X.beginPath();X.moveTo(0,cy);X.lineTo(W,cy);X.stroke();}
+  for(let i=0;i<W;i+=80){
+    X.beginPath();X.moveTo(i,H-140);X.lineTo(i,H);X.stroke();}
+  // Circuit nodes (pulsing)
+  for(let cx=40;cx<W;cx+=80){
+    for(let cy=H-130;cy<H;cy+=32){
+      const pulse=Math.sin(tick*.05+cx*.01+cy*.02)*.4+.6;
+      X.globalAlpha=pulse*.5;
+      X.fillStyle='#3399ff';X.fillRect(cx-2,cy-2,4,4);}}
+  X.globalAlpha=1;
+  // Floor border
+  X.fillStyle='#1a4a7a';X.fillRect(0,H-140,W,2);
+  X.fillStyle='#5588cc';X.fillRect(0,H-138,W,1);
+}
+
+// ── PORTAL ────────────────────────────────────────────────
+function drawPortal(t){
+  const cx=240,cy=H-145;
+  portalHum=(portalHum+1)%360;
+  const pulse=Math.sin(t*.08)*4;
+  // Glow around portal
+  const grad=X.createRadialGradient(cx,cy-110,30,cx,cy-110,180);
+  grad.addColorStop(0,'rgba(80,160,255,0.25)');
+  grad.addColorStop(.5,'rgba(60,120,220,0.12)');
+  grad.addColorStop(1,'rgba(40,80,180,0)');
+  X.fillStyle=grad;X.fillRect(cx-180,cy-290,360,360);
+  // Stone pillars
+  X.fillStyle='#5a5560';X.fillRect(cx-95,cy-240,32,235);X.fillRect(cx+63,cy-240,32,235);
+  X.fillStyle='#403a48';X.fillRect(cx-90,cy-238,22,233);X.fillRect(cx+68,cy-238,22,233);
+  // Stone blocks texture
+  X.fillStyle='#6a6470';
+  for(let i=0;i<7;i++){X.fillRect(cx-95,cy-240+i*36,32,2);X.fillRect(cx+63,cy-240+i*36,32,2);}
+  // Stone arch top
+  X.fillStyle='#5a5560';X.fillRect(cx-95,cy-280,190,42);
+  X.fillStyle='#403a48';X.fillRect(cx-90,cy-278,180,38);
+  X.fillStyle='#6a6470';X.fillRect(cx-95,cy-280,190,3);X.fillRect(cx-95,cy-244,190,3);
+  // Center keystone
+  X.fillStyle='#6a6470';X.fillRect(cx-12,cy-280,24,42);
+  X.fillStyle='#3a343c';X.fillRect(cx-10,cy-275,20,34);
+  // Inside portal — electric blue
+  X.fillStyle='#0a1428';X.fillRect(cx-63,cy-238,126,228);
+  // Energy field
+  X.shadowColor='#5588ff';X.shadowBlur=20+pulse;
+  X.fillStyle='rgba(80,140,240,0.4)';X.fillRect(cx-63,cy-238,126,228);
+  X.fillStyle='rgba(120,180,255,0.3)';X.fillRect(cx-50,cy-225,100,200);
+  // Inner glow center
+  X.fillStyle='rgba(180,220,255,0.5)';X.fillRect(cx-30,cy-180,60,120);
+  X.shadowBlur=0;
+  // Electric arcs
+  X.strokeStyle='#aaddff';X.lineWidth=2;X.shadowColor='#aaddff';X.shadowBlur=8;
+  for(let i=0;i<4;i++){
+    const seed=t*.04+i*1.5;
+    X.beginPath();
+    let px=cx-55,py=cy-220+Math.sin(seed)*30;
+    X.moveTo(px,py);
+    for(let s=0;s<8;s++){
+      px+=(110/8);py+=Math.sin(seed+s*.7)*8;
+      X.lineTo(px,py);}
+    X.stroke();}
+  X.shadowBlur=0;
+  // Sparks
+  if(tick%4===0)sParts(cx+(Math.random()-.5)*100,cy-200+Math.random()*180,'#aaddff',1,2,3);
+  // Cables coming out
+  X.strokeStyle='#1a2a3a';X.lineWidth=8;X.lineCap='round';
+  for(let i=0;i<4;i++){
+    const off=i*30-45,ay=cy-260+i*10;
+    X.beginPath();X.moveTo(cx-95+i*4,ay);X.bezierCurveTo(cx-130-i*10,ay+30,cx-150-i*8,ay+60+i*15,cx-150-i*12,ay+100+i*20);X.stroke();}
+  for(let i=0;i<4;i++){
+    const ay=cy-260+i*10;
+    X.beginPath();X.moveTo(cx+95-i*4,ay);X.bezierCurveTo(cx+130+i*10,ay+30,cx+150+i*8,ay+60+i*15,cx+150+i*12,ay+100+i*20);X.stroke();}
+  // Cable highlights
+  X.strokeStyle='#2a4a6a';X.lineWidth=2;X.lineCap='round';
+  for(let i=0;i<4;i++){
+    const ay=cy-260+i*10;
+    X.beginPath();X.moveTo(cx-95+i*4,ay);X.bezierCurveTo(cx-130-i*10,ay+30,cx-150-i*8,ay+60+i*15,cx-150-i*12,ay+100+i*20);X.stroke();}
+  // Portal label
+  badge('SUPPLY CHAIN PORTAL',cx,cy+20,9,'#88ccff','rgba(0,20,40,0.95)');
+  // Top ring decoration
+  X.shadowColor='#aaddff';X.shadowBlur=10;
+  X.strokeStyle='#88ccff';X.lineWidth=3;
+  X.beginPath();X.arc(cx,cy-282,15,0,Math.PI*2);X.stroke();X.shadowBlur=0;
+}
+
+// ── FRANKA ────────────────────────────────────────────────
+function drawFranka(cx,cy,t){
+  const bob=Math.sin(t*.04)*1;
+  // Legs (khaki/olive pants)
+  X.fillStyle='#6b6248';X.fillRect(cx-14,cy-50,12,52);X.fillRect(cx+2,cy-50,12,52);
+  X.fillStyle='#7b7258';X.fillRect(cx-12,cy-48,3,48);X.fillRect(cx+4,cy-48,3,48);
+  // Shoes
+  X.fillStyle='#1a1410';X.fillRect(cx-16,cy-4,18,7);X.fillRect(cx-1,cy-4,18,7);
+  X.fillStyle='#2a2418';X.fillRect(cx-16,cy-4,18,2);X.fillRect(cx-1,cy-4,18,2);
+  // Vest (olive green professional)
+  X.fillStyle='#4a6448';X.fillRect(cx-22,cy-105,44,55);
+  X.fillStyle='#5a7458';X.fillRect(cx-22,cy-105,6,55);
+  X.fillStyle='#3a5438';X.fillRect(cx+16,cy-103,6,53);
+  // Vest pockets
+  X.fillStyle='#3a5438';X.fillRect(cx-18,cy-75,12,12);X.fillRect(cx+6,cy-75,12,12);
+  X.fillStyle='#2a4428';X.fillRect(cx-18,cy-75,12,2);X.fillRect(cx+6,cy-75,12,2);
+  // Shirt underneath (cream)
+  X.fillStyle='#e0dac8';X.fillRect(cx-16,cy-105,32,22);
+  X.fillStyle='#d0cab8';X.fillRect(cx-16,cy-105,32,3);
+  // Collar
+  X.fillStyle='#f0ead8';X.fillRect(cx-8,cy-103,16,6);
+  // Vest buttons
+  X.fillStyle='#8a4520';X.fillRect(cx-2,cy-82,3,3);X.fillRect(cx-2,cy-72,3,3);X.fillRect(cx-2,cy-62,3,3);
+  // Arms (working at terminal — bent forward)
+  X.fillStyle='#4a6448';X.fillRect(cx-32,cy-98,12,38);X.fillRect(cx+20,cy-98,12,38);
+  // Forearms reaching to terminal
+  X.fillStyle='#e0dac8';X.fillRect(cx-32,cy-65,12,15);X.fillRect(cx+20,cy-65,12,15);
+  // Hands
+  X.fillStyle='#ffd0a0';X.fillRect(cx-32,cy-55,12,12);X.fillRect(cx+20,cy-55,12,12);
+  X.fillStyle='#f0c090';for(let f=0;f<3;f++){X.fillRect(cx-30+f*4,cy-55,3,7);X.fillRect(cx+22+f*4,cy-55,3,7);}
+  // Neck
+  X.fillStyle='#ffd0a0';X.fillRect(cx-8,cy-118,16,14);
+  // HEAD
+  X.fillStyle='#ffd0a0';X.fillRect(cx-19,cy-152,38,40);
+  X.fillStyle='#f0c090';X.fillRect(cx+10,cy-150,9,34);
+  X.fillStyle='#ffe0b8';X.fillRect(cx-17,cy-150,6,36);
+  // Ears
+  X.fillStyle='#ffd0a0';X.fillRect(cx-23,cy-138,5,14);X.fillRect(cx+18,cy-138,5,14);
+  // HAIR (shoulder length, brown)
+  X.fillStyle='#4a3020';
+  // Top
+  X.fillRect(cx-20,cy-158,40,12);X.fillRect(cx-18,cy-162,36,5);
+  // Side flowing hair
+  X.fillRect(cx-25,cy-152,7,42);X.fillRect(cx+18,cy-152,7,42);
+  // Hair to shoulders
+  X.fillRect(cx-24,cy-116,5,18);X.fillRect(cx+19,cy-116,5,18);
+  // Front fringe
+  X.fillStyle='#3a2010';X.fillRect(cx-15,cy-152,30,5);
+  // Highlights
+  X.fillStyle='#5a4030';X.fillRect(cx-22,cy-155,4,15);X.fillRect(cx+17,cy-155,4,15);
+  X.fillStyle='#6a5040';X.fillRect(cx-2,cy-160,4,12);
+  // FACE
+  // Eyes (smart, focused, slight smile)
+  X.fillStyle='#f0eece';X.fillRect(cx-12,cy-132,8,7);X.fillRect(cx+4,cy-132,8,7);
+  X.fillStyle='#4c3a3a';X.fillRect(cx-10,cy-131,4,4);X.fillRect(cx+6,cy-131,4,4);
+  X.fillStyle='#000';X.fillRect(cx-9,cy-130,3,3);X.fillRect(cx+7,cy-130,3,3);
+  X.fillStyle='#fff';X.fillRect(cx-8,cy-130,1,1);X.fillRect(cx+8,cy-130,1,1);
+  // Glasses (subtle, smart)
+  X.strokeStyle='#3a3030';X.lineWidth=1;
+  X.beginPath();X.moveTo(cx-14,cy-132);X.lineTo(cx-2,cy-132);X.stroke();
+  X.beginPath();X.moveTo(cx+2,cy-132);X.lineTo(cx+14,cy-132);X.stroke();
+  X.strokeRect(cx-13,cy-133,9,8);X.strokeRect(cx+3,cy-133,9,8);
+  // Eyebrows
+  X.fillStyle='#4a3020';X.fillRect(cx-14,cy-138,10,2);X.fillRect(cx+4,cy-138,10,2);
+  // Nose
+  X.fillStyle='#e8b890';X.fillRect(cx-2,cy-125,4,7);
+  // Confident smile
+  X.fillStyle='#a06040';X.fillRect(cx-5,cy-115,10,2);
+  X.fillStyle='#c08866';X.fillRect(cx-7,cy-117,3,3);X.fillRect(cx+4,cy-117,3,3);
+  // Cheeks
+  X.fillStyle='rgba(255,140,110,0.2)';X.fillRect(cx-20,cy-122,10,7);X.fillRect(cx+10,cy-122,10,7);
+  
+  // ═══ HOLOGRAPHIC TERMINAL ═══
+  const tx=cx-5,ty=cy-65;
+  // Terminal base
+  X.fillStyle='#2a3848';X.fillRect(tx-12,ty+25,140,18);
+  X.fillStyle='#3a4858';X.fillRect(tx-12,ty+25,140,4);
+  X.fillStyle='#1a2838';X.fillRect(tx-10,ty+30,136,12);
+  // Holographic display panel (rising up)
+  X.shadowColor='#00aaff';X.shadowBlur=18;
+  X.fillStyle='rgba(0,170,255,0.18)';X.fillRect(tx-5,ty-25,128,52);
+  X.strokeStyle='#00ccff';X.lineWidth=2;X.strokeRect(tx-5,ty-25,128,52);
+  X.fillStyle='rgba(0,170,255,0.08)';X.fillRect(tx-3,ty-23,124,48);
+  X.shadowBlur=0;
+  // World map dots (simulated)
+  X.fillStyle='#88ddff';
+  const mapDots=[[10,8],[18,10],[28,6],[35,12],[45,9],[55,14],[68,11],[80,8],[92,12],[105,15],
+                 [15,22],[25,25],[40,28],[52,32],[65,28],[78,30],[88,25],[100,28],[115,22],
+                 [20,38],[35,42],[48,40],[60,36],[72,42],[85,40],[98,38],[110,42]];
+  mapDots.forEach(([dx,dy])=>{X.fillRect(tx+dx,ty-20+dy,2,2);});
+  // Lines connecting some dots (network)
+  X.strokeStyle='rgba(136,221,255,0.4)';X.lineWidth=1;
+  X.beginPath();X.moveTo(tx+18,ty-10);X.lineTo(tx+45,ty-11);X.stroke();
+  X.beginPath();X.moveTo(tx+68,ty-9);X.lineTo(tx+92,ty-8);X.stroke();
+  X.beginPath();X.moveTo(tx+35,ty+12);X.lineTo(tx+72,ty+22);X.stroke();
+  // Pulsing connection points
+  if(Math.floor(t/15)%2===0){
+    X.fillStyle='#ffdd00';X.shadowColor='#ffdd00';X.shadowBlur=8;
+    X.fillRect(tx+45,ty-10,3,3);X.fillRect(tx+92,ty-8,3,3);X.shadowBlur=0;}
+  // Floating data text
+  X.fillStyle='#00ddff';X.font='4px monospace';X.textAlign='left';X.textBaseline='top';
+  X.fillText('PORTAL.SYNC: '+(consultsCompleted*10)+'%',tx-3,ty-22);
+  X.fillText('LATENCY: '+(Math.ceil(portalLatency))+'ms',tx-3,ty-16);
+  // Glowing edges
+  X.strokeStyle='#00ccff66';X.lineWidth=1;
+  X.beginPath();X.moveTo(tx-5,ty-25);X.lineTo(tx-5,ty+27);X.stroke();
+  X.beginPath();X.moveTo(tx+123,ty-25);X.lineTo(tx+123,ty+27);X.stroke();
+  
+  // Labels
+  badge('FRANKA',cx,cy-178,11,'#aaccdd','rgba(10,22,32,0.95)');
+  badge('(PORTAL GUARDIAN)',cx,cy-162,6,'#88aabb','rgba(8,16,24,0.92)');
+}
+
+// ── RENE (same chill as ever) ─────────────────────────────
+function drawRene(t){
+  const bx=200,by=H-150;
+  const sg=.7+Math.sin(t*.025)*.14;
+  // Legs
+  X.fillStyle='#3c3c5c';X.fillRect(bx-12,by-30,12,30);X.fillRect(bx+2,by-30,12,30);
+  X.fillStyle='#2a2a4a';X.fillRect(bx-7,by-30,3,30);X.fillRect(bx+7,by-30,3,30);
+  X.fillStyle='#221810';X.fillRect(bx-14,by+0,16,7);X.fillRect(bx+0,by+0,16,7);
+  X.fillStyle='#332218';X.fillRect(bx-14,by+0,16,2);X.fillRect(bx+0,by+0,16,2);
+  // Torso
+  X.fillStyle='#8caabb';X.fillRect(bx-18,by-78,36,52);X.fillStyle='#728ea0';X.fillRect(bx+8,by-76,10,48);X.fillStyle='#9cbee8';X.fillRect(bx-17,by-76,4,46);
+  X.fillStyle='#fff';X.fillRect(bx-6,by-78,12,6);X.fillRect(bx-2,by-72,4,20);
+  X.fillStyle='#ddd';for(let b=0;b<3;b++)X.fillRect(bx-1,by-67+b*7,2,2);
+  X.fillStyle='#e8e8e8';X.fillRect(bx-6,by-78,4,12);X.fillRect(bx+2,by-78,4,12);
+  // Arms (one holding coffee mug, other holding eggs bowl)
+  X.fillStyle='#8caabb';X.fillRect(bx-28,by-72,11,35);X.fillRect(bx+17,by-72,11,35);
+  X.fillStyle='#728ea0';X.fillRect(bx-19,by-72,3,35);X.fillRect(bx+24,by-72,3,35);
+  X.fillStyle='#ffd0a0';X.fillRect(bx-28,by-42,11,10);X.fillRect(bx+17,by-42,11,10);
+  // Coffee mug (left hand)
+  X.fillStyle='#fff';X.fillRect(bx-36,by-50,11,14);
+  X.fillStyle='#553322';X.fillRect(bx-35,by-48,9,4);
+  X.strokeStyle='#fff';X.lineWidth=2;X.beginPath();X.arc(bx-25,by-43,3,-1.5,1.5);X.stroke();
+  // Steam
+  X.strokeStyle='#fff8';X.lineWidth=1;
+  for(let i=0;i<2;i++){X.beginPath();X.moveTo(bx-33+i*4,by-52);X.lineTo(bx-32+i*4+Math.sin(t*.1+i)*2,by-60);X.stroke();}
+  // Eggs bowl (right hand)
+  X.fillStyle='#786658';X.beginPath();X.ellipse(bx+30,by-32,11,5,0,0,Math.PI*2);X.fill();
+  X.fillStyle='#564436';X.beginPath();X.ellipse(bx+30,by-30,9,4,0,0,Math.PI*2);X.fill();
+  X.fillStyle='#fffde2';X.beginPath();X.ellipse(bx+27,by-38,5,7,0,0,Math.PI*2);X.fill();
+  X.fillStyle='#fff8cc';X.beginPath();X.ellipse(bx+33,by-37,4,6,0,0,Math.PI*2);X.fill();
+  // Neck + Head
+  X.fillStyle='#ffd0a0';X.fillRect(bx-7,by-96,14,20);
+  X.fillStyle='#ffd0a0';X.fillRect(bx-20,by-130,40,46);X.fillStyle='#f0c090';X.fillRect(bx+10,by-128,8,40);X.fillStyle='#ffe0b8';X.fillRect(bx-18,by-128,5,42);
+  X.fillStyle='#ffd0a0';X.fillRect(bx-22,by-114,5,13);X.fillRect(bx+17,by-114,5,13);
+  X.fillStyle='#e8b890';X.fillRect(bx-21,by-112,3,9);X.fillRect(bx+18,by-112,3,9);
+  // Hair
+  X.fillStyle='#6c4624';X.fillRect(bx-20,by-132,40,9);X.fillRect(bx-22,by-130,6,22);X.fillRect(bx+16,by-130,6,22);
+  X.fillStyle='#8c5e34';X.fillRect(bx-6,by-132,14,4);
+  // Headband
+  X.fillStyle='#f6f6f6';X.fillRect(bx-22,by-123,44,11);
+  X.fillStyle='#ddd';X.fillRect(bx-22,by-123,44,2);X.fillRect(bx-22,by-114,44,1);
+  X.fillStyle='#333348';X.font='bold 6px "Press Start 2P"';X.textAlign='center';X.textBaseline='middle';X.fillText('SENSEI',bx,by-118);
+  X.fillStyle='#e8e8e8';X.fillRect(bx+18,by-123,8,7);X.fillRect(bx+20,by-118,6,4);
+  // Face
+  X.fillStyle='#6c4624';X.fillRect(bx-15,by-108,11,2);X.fillRect(bx+4,by-108,11,2);
+  X.fillStyle='#ffd0a0';X.fillRect(bx-15,by-105,11,5);X.fillRect(bx+4,by-105,11,5);
+  X.fillStyle='#f0eece';X.fillRect(bx-13,by-102,8,6);X.fillRect(bx+5,by-102,8,6);
+  X.fillStyle='#4c3232';X.fillRect(bx-11,by-101,4,4);X.fillRect(bx+7,by-101,4,4);
+  X.fillStyle='#000';X.fillRect(bx-10,by-100,2,2);X.fillRect(bx+8,by-100,2,2);
+  X.fillStyle='#fff';X.fillRect(bx-9,by-100,1,1);X.fillRect(bx+9,by-100,1,1);
+  X.fillStyle='#e8b890';X.fillRect(bx-2,by-94,4,6);
+  X.fillStyle='#c09070';X.fillRect(bx-7,by-86,14,3);X.fillRect(bx-9,by-88,3,3);X.fillRect(bx+6,by-88,3,3);
+  X.fillStyle='#e8d0b8';X.fillRect(bx-5,by-86,10,1);
+  // Patience aura
+  if(Math.floor(t/8)%2===0){
+    X.strokeStyle='rgba(0,255,200,0.18)';X.lineWidth=2;X.shadowColor='#00ffcc';X.shadowBlur=6;
+    X.beginPath();X.arc(bx,by-80,42,0,Math.PI*2);X.stroke();X.shadowBlur=0;}
+  badge('RENE',bx,by-150,11,'#00ffcc','rgba(0,18,14,0.95)');
+}
+
+// ── ANTON DRAWERS ─────────────────────────────────────────
+function drawFloatingAnton(a,t){
+  const bob=Math.sin(t*.05+a.bob)*8;
+  a.x-=a.spd*.3;
+  if(a.x<-30)a.x=W+30;
+  const cx=a.x,cy=a.y+bob;
+  X.save();X.globalAlpha=.5+Math.sin(t*.04+a.bob)*.15;
+  X.shadowColor='#aaddff';X.shadowBlur=12;
+  // Ghost body
+  X.fillStyle='#aabbcc';X.fillRect(cx-10*a.sz,cy-30*a.sz,20*a.sz,24*a.sz);
+  X.fillStyle='#88aabb';X.fillRect(cx-9*a.sz,cy-8*a.sz,18*a.sz,18*a.sz);
+  // Wispy bottom
+  for(let w=0;w<3;w++){X.fillStyle='#aabbcc';X.fillRect(cx-8*a.sz+w*7*a.sz,cy+8*a.sz,4*a.sz,5+Math.sin(t*.08+w)*2);}
+  // Head
+  X.fillStyle='#ddeeee';X.fillRect(cx-8*a.sz,cy-28*a.sz,16*a.sz,16*a.sz);
+  // Eyes
+  X.fillStyle='#333';X.fillRect(cx-3*a.sz,cy-22*a.sz,2.5*a.sz,2.5*a.sz);X.fillRect(cx+1*a.sz,cy-22*a.sz,2.5*a.sz,2.5*a.sz);
+  X.shadowBlur=0;X.restore();
+  // Small label
+  X.globalAlpha=.4;
+  txt('FLOATING ANTON',cx,cy-40*a.sz,5,'#88aabb',{align:'center',baseline:'middle'});
+  X.globalAlpha=1;
+}
+
+function drawPeekingAnton(a,t){
+  const cx=a.x,cy=a.y;
+  X.save();X.globalAlpha=.45+Math.sin(t*.03+cx*.01)*.15;
+  X.shadowColor='#aaddff';X.shadowBlur=10;
+  // Only half body visible (peeking from side)
+  if(a.side==='left'){
+    X.fillStyle='#88aabb';X.fillRect(cx-10,cy-50,15,55);
+    X.fillStyle='#ddeeee';X.fillRect(cx-10,cy-58,15,18);
+    X.fillStyle='#222';X.fillRect(cx-3,cy-50,3,3);X.fillRect(cx+3,cy-50,3,3);}
+  else{
+    X.fillStyle='#88aabb';X.fillRect(cx-5,cy-50,15,55);
+    X.fillStyle='#ddeeee';X.fillRect(cx-5,cy-58,15,18);
+    X.fillStyle='#222';X.fillRect(cx-3,cy-50,3,3);X.fillRect(cx+3,cy-50,3,3);}
+  X.shadowBlur=0;X.restore();
+  X.globalAlpha=.5;
+  txt('PEEKING ANTON',cx,cy-72,5,'#88aabb',{align:'center',baseline:'middle'});
+  X.globalAlpha=1;
+}
+
+function drawActiveAnton(a){
+  a.appearAnim=Math.min(20,a.appearAnim+1);
+  const lifePct=a.life/a.maxLife;
+  const appearPct=a.appearAnim/20;
+  X.save();
+  // Materialization sparkles ring
+  if(a.appearAnim<20){
+    X.strokeStyle='#aaddff';X.lineWidth=2;X.shadowColor='#aaddff';X.shadowBlur=15;
+    X.beginPath();X.arc(a.x,a.y-22,32*(1-appearPct)+8,0,Math.PI*2);X.stroke();
+    X.shadowBlur=0;}
+  X.globalAlpha=appearPct;
+  X.shadowColor='#aaddff';X.shadowBlur=20;
+  // Body
+  X.fillStyle='#88aabb';X.fillRect(a.x-15,a.y-48,30,30);
+  // Wisp bottom
+  for(let w=0;w<4;w++){X.fillStyle='#88aabb';X.fillRect(a.x-14+w*7,a.y-18,5,8+Math.sin(tick*.1+w)*3);}
+  // Head
+  X.fillStyle='#ddeeee';X.fillRect(a.x-13,a.y-72,26,26);
+  // Eyes
+  X.fillStyle='#333';X.fillRect(a.x-6,a.y-62,4,4);X.fillRect(a.x+2,a.y-62,4,4);
+  X.fillStyle='#fff';X.fillRect(a.x-5,a.y-61,2,2);X.fillRect(a.x+3,a.y-61,2,2);
+  // Mouth (open like talking)
+  X.fillStyle='#334';X.fillRect(a.x-4,a.y-52,8,4);
+  X.shadowBlur=0;
+  // Timer ring around Anton
+  X.strokeStyle='#ffdd00';X.lineWidth=4;X.shadowColor='#ffdd00';X.shadowBlur=10;
+  X.beginPath();X.arc(a.x,a.y-35,40,-Math.PI/2,-Math.PI/2+lifePct*Math.PI*2);X.stroke();
+  X.shadowBlur=0;
+  // Pulsing "CLICK ME" indicator
+  if(Math.floor(tick/6)%2===0&&a.appearAnim>=20){
+    X.strokeStyle='#ffaa00';X.lineWidth=2;
+    X.beginPath();X.arc(a.x,a.y-35,46,0,Math.PI*2);X.stroke();}
+  // Consult speech bubble
+  const bx=a.x-50,by=a.y-100;
+  X.fillStyle='rgba(255,255,255,0.96)';X.fillRect(bx,by,100,22);
+  X.strokeStyle='#aaddff';X.lineWidth=2;X.strokeRect(bx,by,100,22);
+  X.fillStyle='rgba(255,255,255,0.96)';X.beginPath();X.moveTo(bx+45,by+22);X.lineTo(bx+50,by+32);X.lineTo(bx+55,by+22);X.fill();
+  X.strokeStyle='#aaddff';X.beginPath();X.moveTo(bx+45,by+22);X.lineTo(bx+50,by+32);X.lineTo(bx+55,by+22);X.stroke();
+  X.fillStyle='#003355';X.font='bold 6px "Press Start 2P"';X.textAlign='center';X.textBaseline='middle';
+  X.fillText(a.consultText,bx+50,by+11);
+  X.restore();
+}
+
+// ── SOURCE-LIST TICKET ────────────────────────────────────
+function drawTicket(t){
+  if(!ticket||ticket.clicked)return;
+  ticket.bob=Math.sin(tick*.06)*8;
+  const tx=ticket.x,ty=ticket.y+ticket.bob;
+  // Outer glow
+  X.shadowColor='#ffdd00';X.shadowBlur=35+Math.sin(tick*.1)*8;
+  // Ticket body (slightly tilted)
+  X.save();X.translate(tx,ty);X.rotate(Math.sin(tick*.04)*.08);
+  // Main ticket
+  X.fillStyle='#ffffff';X.fillRect(-42,-30,84,60);
+  X.strokeStyle='#ddaa00';X.lineWidth=2;X.strokeRect(-42,-30,84,60);
+  // Yellow accent stripes
+  X.fillStyle='#ffdd00';X.fillRect(-42,-30,84,8);X.fillRect(-42,22,84,8);
+  // Border holes (ticket style)
+  X.fillStyle='#ddaa00';
+  for(let i=-3;i<=3;i++)X.fillRect(i*10,-22,3,3);
+  for(let i=-3;i<=3;i++)X.fillRect(i*10,17,3,3);
+  // Vertical perforation
+  X.fillStyle='#ddaa00';
+  for(let i=-2;i<=2;i++)X.fillRect(15,i*8,2,3);
+  // Text
+  X.fillStyle='#0a0a14';X.font='bold 7px "Press Start 2P"';X.textAlign='center';X.textBaseline='middle';
+  X.fillText('SOURCE-LIST',-12,-10);X.fillText('TICKET',-12,1);
+  // BIG N letter
+  X.fillStyle='#ff4422';X.font='bold 24px "Press Start 2P"';X.shadowColor='#ff4422';X.shadowBlur=10;X.fillText('N',28,0);
+  X.shadowBlur=0;
+  X.restore();
+  X.shadowBlur=0;
+  // Sparkles around ticket
+  if(tick%5===0)sParts(tx+(Math.random()-.5)*60,ty+(Math.random()-.5)*40,['#ffdd00','#ffffff'][Math.floor(Math.random()*2)],1,2,4);
+  // Click prompt
+  if(Math.floor(tick/24)%2===0)badge('▶ CLICK THE TICKET! ◀',tx,ty-65,11,'#ffdd00','rgba(60,40,0,0.95)');
+}
+
+// ── HUD ────────────────────────────────────────────────────
+function drawHUD(){
+  X.fillStyle='rgba(0,0,12,0.96)';X.fillRect(0,0,W,52);
+  X.fillStyle='#aaddff';X.fillRect(0,50,W,3);
+  X.shadowColor='#aaddff';X.shadowBlur=8;X.fillRect(0,50,W,3);X.shadowBlur=0;
+  txt('CH.3: PORTAL TANGO',95,28,11,'#aaddff',{align:'left',baseline:'middle',shadow:'#aaddff',bold:true});
+  txt('TIME: 14:30',W/2,28,12,'#ff6644',{align:'center',baseline:'middle',shadow:'#ff6644',bold:true});
+  txt('RENE Lv.32+  PATIENCE: ∞',W-65,28,10,'#ffdd00',{align:'right',baseline:'middle',shadow:'#ffdd00',bold:true});
+  X.fillStyle='rgba(0,0,12,0.92)';X.fillRect(0,53,W,36);
+  X.fillStyle='#aaddff22';X.fillRect(0,87,W,2);
+  // Chill / Portal Stability bar
+  const cp=chillHP/100,cc=chillHP>60?'#aaddff':chillHP>30?'#ffdd00':'#ff3300';
+  txt('⚡ STABILITY',12,62,8,cc,{align:'left',baseline:'middle',bold:true});
+  X.fillStyle='#1a1a2c';X.fillRect(12,71,150,15);
+  X.fillStyle=cc;X.shadowColor=cc;X.shadowBlur=8;X.fillRect(12,71,150*cp,15);X.shadowBlur=0;
+  X.strokeStyle=cc+'88';X.lineWidth=1;X.strokeRect(12,71,150,15);
+  txt(Math.ceil(chillHP)+'%',87,79,7,'#fff',{align:'center',baseline:'middle',bold:true});
+  // Consults progress
+  txt('💬 CONSULTS',W/2-180,62,8,'#aaddff',{align:'left',baseline:'middle',bold:true});
+  X.fillStyle='#1a2c3c';X.fillRect(W/2-180,71,260,15);
+  X.fillStyle='#aaddff';X.shadowColor='#aaddff';X.shadowBlur=8;X.fillRect(W/2-180,71,260*(consultsCompleted/CONSULTS_NEEDED),15);X.shadowBlur=0;
+  X.strokeStyle='#aaddff88';X.lineWidth=1;X.strokeRect(W/2-180,71,260,15);
+  txt(consultsCompleted+' / '+CONSULTS_NEEDED,W/2-50,79,7,'#fff',{align:'center',baseline:'middle',bold:true});
+  // Latency display
+  txt('PORTAL LATENCY: '+Math.ceil(portalLatency)+'ms',W/2,100,8,portalLatency>900?'#ff4422':portalLatency>500?'#ffdd00':'#aaddff',{align:'center',baseline:'middle',bold:true,shadow:portalLatency>900?'#ff4422':null});
+  // Score
+  txt('SCORE: '+score.toString().padStart(6,'0'),W-130,62,10,'#ffdd00',{align:'right',baseline:'middle',shadow:'#ffdd00',bold:true});
+  // Hidden Message display
+  txt('HIDDEN:',W-130,77,7,'#88aaaa',{align:'right',baseline:'middle'});
+  ['K','I','N','G'].forEach((f,i)=>{
+    const _progress=loadProgress();
+    const got=_progress.letters.includes(f)||(f==='K')||(f==='I')||(f==='N'&&fragCollected.includes('N'));
+    X.fillStyle=got?'#ffdd00':'#333344';X.shadowColor=got?'#ffdd00':'transparent';X.shadowBlur=got?12:0;
+    X.font='bold 16px "Press Start 2P"';X.textAlign='center';X.textBaseline='middle';X.fillText(f,W-95+i*22,79);X.shadowBlur=0;});
+}
+
+// ── TITLE SCREEN ──────────────────────────────────────────
+let tStars=[];
+function initTS(){tStars=[];for(let i=0;i<200;i++)tStars.push({x:Math.random()*W,y:Math.random()*H,sz:Math.random()<.1?3:Math.random()<.3?2:1,spd:.07+Math.random()*.22,b:.3+Math.random()*.7,tw:Math.random()*Math.PI*2});}
+function drawTitle(){
+  const bg=X.createLinearGradient(0,0,0,H);bg.addColorStop(0,'#020610');bg.addColorStop(.55,'#061a2e');bg.addColorStop(1,'#020610');
+  X.fillStyle=bg;X.fillRect(0,0,W,H);
+  X.strokeStyle='#0c2438';X.lineWidth=1;
+  for(let x=0;x<W;x+=48){X.beginPath();X.moveTo(x,0);X.lineTo(x,H);X.stroke();}
+  for(let y=0;y<H;y+=48){X.beginPath();X.moveTo(0,y);X.lineTo(W,y);X.stroke();}
+  tStars.forEach(s=>{X.globalAlpha=Math.max(0,s.b*(.5+Math.sin(tick*.02+s.tw)*.45));X.fillStyle='#fff';X.fillRect(s.x,s.y,s.sz,s.sz);s.y+=s.spd*.28;if(s.y>H)s.y=-5;});X.globalAlpha=1;
+  // KING letters bg with K, I highlighted
+  ['K','I','N','G'].forEach((l,i)=>{const got=i<3;
+    X.globalAlpha=got?.15+Math.sin(tick*.013+i*1.6)*.04:.05;
+    X.fillStyle=got?'#ffdd00':'#aaddff';X.font='bold 100px "Press Start 2P"';X.textAlign='center';X.textBaseline='middle';
+    X.fillText(l,160+i*168,340+Math.sin(tick*.018+i*1.6)*22);});X.globalAlpha=1;
+  X.strokeStyle='#aaddff';X.lineWidth=2;X.shadowColor='#aaddff';X.shadowBlur=10;X.beginPath();X.moveTo(60,80);X.lineTo(W-60,80);X.stroke();X.shadowBlur=0;
+  txt('R · E · N · E',W/2,140,38,'#aaddff',{align:'center',baseline:'middle',shadow:'#aaddff',bold:true});
+  txt('THE SOURCE-LIST CHRONICLES',W/2,185,14,'#ffdd00',{align:'center',baseline:'middle',shadow:'#ffdd00',bold:true});
+  X.fillStyle='rgba(170,221,255,0.1)';X.fillRect(W/2-280,205,560,38);X.strokeStyle='#aaddff66';X.lineWidth=2;X.strokeRect(W/2-280,205,560,38);
+  txt('CHAPTER 3: THE PORTAL TANGO',W/2,224,11,'#ffffff',{align:'center',baseline:'middle',bold:true});
+  X.strokeStyle='#aaddff33';X.setLineDash([8,4]);X.beginPath();X.moveTo(110,258);X.lineTo(W-110,258);X.stroke();X.setLineDash([]);
+  txt('"In which Anton sends a message and is somehow already behind you"',W/2,278,8,'#88bbcc',{align:'center',baseline:'middle'});
+  // Mini character previews (simple)
+  drawMiniChar(195,375,'R');
+  drawMiniChar(385,375,'F');
+  drawMiniChar(575,375,'A');
+  drawMiniChar(765,375,'P');
+  if(Math.floor(tick/26)%2===0){X.fillStyle='rgba(255,255,255,0.08)';X.fillRect(W/2-190,475,380,40);
+    X.strokeStyle='#ffffff';X.lineWidth=2;X.strokeRect(W/2-190,475,380,40);
+    txt('▶ CLICK TO START CHAPTER 3',W/2,495,12,'#ffffff',{align:'center',baseline:'middle',shadow:'#ffffff',bold:true});}
+  txt('🎂 K + I COLLECTED — N IS NEXT! 🎂',W/2,540,7,'#446688',{align:'center',baseline:'middle'});
+  txt('Anton awaits behind a portal near you',W/2,558,6,'#334466',{align:'center',baseline:'middle'});
+  X.strokeStyle='#aaddff22';X.lineWidth=1;X.beginPath();X.moveTo(60,H-58);X.lineTo(W-60,H-58);X.stroke();
+  txt('CONTROLS: CLICK THE GLOWING ACTIVE ANTON BEFORE HE VANISHES',W/2,H-32,7,'#446688',{align:'center',baseline:'middle'});
+}
+function drawMiniChar(x,y,type){
+  X.save();
+  if(type==='R'){
+    X.shadowColor='#00ffcc';X.shadowBlur=12;
+    X.fillStyle='#8caabb';X.fillRect(x-14,y-30,28,32);
+    X.fillStyle='#ffd0a0';X.fillRect(x-12,y-58,24,28);
+    X.fillStyle='#fff';X.fillRect(x-13,y-46,26,7);
+    X.fillStyle='#333';X.font='bold 4px "Press Start 2P"';X.textAlign='center';X.textBaseline='middle';X.fillText('SEN',x,y-42);
+    X.fillStyle='#224';X.fillRect(x-7,y-52,5,5);X.fillRect(x+2,y-52,5,5);
+    X.shadowBlur=0;
+    badge('RENE',x,y-78,8,'#00ffcc','rgba(0,15,12,0.95)');
+    txt('Source-Paladin',x,y+18,5,'#66bbcc',{align:'center'});
+  }else if(type==='F'){
+    X.shadowColor='#aaccdd';X.shadowBlur=12;
+    X.fillStyle='#4a6448';X.fillRect(x-14,y-30,28,32);
+    X.fillStyle='#e0dac8';X.fillRect(x-12,y-30,24,10);
+    X.fillStyle='#ffd0a0';X.fillRect(x-11,y-58,22,28);
+    X.fillStyle='#4a3020';X.fillRect(x-13,y-62,26,10);X.fillRect(x-15,y-58,5,22);X.fillRect(x+10,y-58,5,22);
+    X.fillStyle='#224';X.fillRect(x-6,y-52,4,4);X.fillRect(x+2,y-52,4,4);
+    X.strokeStyle='#3a3030';X.lineWidth=1;X.strokeRect(x-7,y-53,5,5);X.strokeRect(x+1,y-53,5,5);
+    X.shadowBlur=0;
+    badge('FRANKA',x,y-78,8,'#aaccdd','rgba(10,22,32,0.95)');
+    txt('Portal Master',x,y+18,5,'#88aabb',{align:'center'});
+  }else if(type==='A'){
+    X.shadowColor='#aaddff';X.shadowBlur=14;X.globalAlpha=.85;
+    X.fillStyle='#88aabb';X.fillRect(x-14,y-30,28,32);
+    X.fillStyle='#ddeeee';X.fillRect(x-12,y-58,24,28);
+    X.fillStyle='#222';X.fillRect(x-5,y-50,4,4);X.fillRect(x+1,y-50,4,4);
+    X.shadowBlur=0;X.globalAlpha=1;
+    badge('ANTON',x,y-78,8,'#aaddff','rgba(0,18,30,0.95)');
+    txt('Teleporter Ghost',x,y+18,5,'#88aabb',{align:'center'});
+  }else{// P = Portal
+    X.shadowColor='#aaddff';X.shadowBlur=18;
+    // Mini portal
+    X.fillStyle='#5a5560';X.fillRect(x-22,y-50,8,55);X.fillRect(x+14,y-50,8,55);
+    X.fillStyle='#5a5560';X.fillRect(x-22,y-58,44,12);
+    X.fillStyle='#0a1428';X.fillRect(x-14,y-50,28,55);
+    X.fillStyle='rgba(80,140,240,0.6)';X.fillRect(x-14,y-50,28,55);
+    X.fillStyle='rgba(180,220,255,0.5)';X.fillRect(x-8,y-40,16,35);
+    X.shadowBlur=0;
+    badge('PORTAL',x,y-78,8,'#aaddff','rgba(0,18,40,0.95)');
+    txt('Source-List Gate',x,y+18,5,'#88aabb',{align:'center'});
+  }
+  X.restore();
+}
+
+// ── INTRO SCENE ────────────────────────────────────────────
+function drawIntroScene(t){
+  drawBG();drawPortal(t);
+  // Decorative background Antons
+  floatingAntons.forEach(a=>drawFloatingAnton(a,t));
+  peekingAntons.forEach(a=>drawPeekingAnton(a,t));
+  drawRene(t);
+  drawFranka(720,H-150,t);
+}
+
+// ── BATTLE ─────────────────────────────────────────────────
+function drawBattleScene(t){
+  drawBG();drawPortal(t);
+  floatingAntons.forEach(a=>drawFloatingAnton(a,t));
+  peekingAntons.forEach(a=>drawPeekingAnton(a,t));
+  drawRene(t);drawFranka(720,H-150,t);
+  if(ticketSpawned)drawTicket(t);
+  activeAntons.forEach(drawActiveAnton);
+  // Warning banner if latency high
+  if(portalLatency>900){
+    X.fillStyle='rgba(255,60,0,'+(.3+Math.sin(t*.2)*.2)+')';X.fillRect(0,90,W,18);
+    txt('⚠ PORTAL LATENCY CRITICAL — CLICK ANTONS NOW! ⚠',W/2,99,9,'#fff',{align:'center',baseline:'middle',shadow:'#ff4422',bold:true});}
+}
+
+// ── LOSE SCREEN ────────────────────────────────────────────
+function drawLose(){
+  loseTimer++;
+  X.fillStyle=`rgba(40,0,0,${Math.min(.88,loseTimer/40*.88)})`;X.fillRect(0,0,W,H);
+  if(loseTimer<30)return;
+  const a=1+Math.sin(loseTimer*0.12)*0.08;
+  X.save();X.translate(W/2,135);X.scale(a,a);
+  X.shadowColor='#ff4444';X.shadowBlur=45;
+  X.fillStyle='#ff4444';X.font='bold 60px "Press Start 2P"';X.textAlign='center';X.textBaseline='middle';
+  X.fillText('PORTAL CRASH!',0,0);X.restore();X.shadowBlur=0;
+  txt('TOO MANY ANTONS MANIFESTED AT ONCE!',W/2,195,12,'#ffaa66',{align:'center',baseline:'middle',shadow:'#ff6644',bold:true});
+  txt('(Reality could not handle the load)',W/2,220,8,'#ffaaaa',{align:'center',baseline:'middle'});
+  if(loseTimer>80){
+    const lines=[
+      '> PORTAL LATENCY: 1400ms+ (CRITICAL)',
+      '> CONCURRENT ANTONS: TOO MANY TO COUNT',
+      '> NETWORK PHYSICS: BROKEN',
+      '> ANTON STATUS: EVERYWHERE & NOWHERE',
+      '> FRANKA STATUS: HAS BACKUP READY',
+      '> ANTON 💬: ALREADY FILED RECOVERY EMAIL',
+      "> ALIREZA: 'I am stuck in 3 timelines'",
+      '> RECOVERY: 1-CLICK AVAILABLE → TRY AGAIN!',
+    ];
+    const lv=Math.floor((loseTimer-80)/12);
+    X.fillStyle='rgba(40,5,0,0.95)';X.fillRect(W/2-270,250,540,190);
+    X.strokeStyle='#ff6644';X.lineWidth=2;X.strokeRect(W/2-270,250,540,190);
+    X.fillStyle='#ff6644';X.fillRect(W/2-270,250,540,3);
+    X.font='bold 8px "Press Start 2P"';X.textAlign='left';X.textBaseline='top';
+    lines.slice(0,lv).forEach((l,i)=>{X.fillStyle=i>=lines.length-1?'#ffdd00':'#ff8844';X.fillText(l,W/2-258,268+i*22);
+      if(i===lv-1&&lv<=lines.length&&Math.floor(tick/20)%2===0)X.fillText('_',W/2-258+X.measureText(l).width+4,268+i*22);});}
+  if(loseTimer>180){
+    txt('CONSULTS COMPLETED: '+consultsCompleted+' / '+CONSULTS_NEEDED,W/2,470,10,'#ffaa66',{align:'center',baseline:'middle',shadow:'#ff6644',bold:true});
+    txt('SCORE: '+score.toString().padStart(6,'0'),W/2,495,10,'#ffdd00',{align:'center',baseline:'middle',shadow:'#ffdd00',bold:true});
+    txt('🎂 Rene believes in you. So does Anton (he\'s here).',W/2,520,9,'#aaccaa',{align:'center',baseline:'middle',bold:true});}
+}
+
+// ── VICTORY (CLEAR LAYOUT) ─────────────────────────────────
+function drawVictory(){
+  vTimer++;
+  X.fillStyle=`rgba(0,0,10,${Math.min(1,vTimer/55)*.94})`;X.fillRect(0,0,W,H);
+  if(vTimer<30)return;
+  if(vTimer===30){S.frag();for(let i=0;i<40;i++)sParts(W/2,H/2,['#ffdd00','#aaddff','#ff6644','#aaccff','#ff88ff'][Math.floor(Math.random()*5)],1,6+Math.random()*5,7);}
+  dParts();uParts();
+  const fs=Math.min(1,(vTimer-30)/35);
+  if(fs>.7)txt('👑',W/2,108,28,'#ffdd00',{align:'center',baseline:'middle',shadow:'#ffdd00'});
+  if(fs>0){X.save();X.translate(W/2,165);X.scale(fs,fs);
+    X.shadowColor='#ffdd00';X.shadowBlur=45;X.fillStyle='#ffdd00';X.font='bold 75px "Press Start 2P"';X.textAlign='center';X.textBaseline='middle';X.fillText('N',0,0);X.shadowBlur=0;X.restore();
+    txt('FRAGMENT OBTAINED',W/2,222,11,'#ffffff',{align:'center',baseline:'middle',bold:true});}
+  if(vTimer>65){const ks=Math.min(1,(vTimer-65)/30);
+    X.save();X.translate(W/2,260);X.scale(ks,ks);
+    X.shadowColor='#ffdd00';X.shadowBlur=20;X.fillStyle='#ffdd00';X.font='bold 40px "Press Start 2P"';X.textAlign='center';X.textBaseline='middle';
+    X.fillText('K  +  I  +  N',0,0);X.restore();
+    txt('THREE LETTERS OF DESTINY — KIN — TEAM-FAMILY UNITED',W/2,298,9,'#88ccaa',{align:'center',baseline:'middle',bold:true});}
+  if(vTimer>110){
+    const lines=[
+      '> PORTAL LATENCY: 50ms (NORMAL) ✓',
+      '> ALL 10 CONSULTS: SOLVED ✓',
+      "> SOURCE-LIST TICKET: CLAIMED ✓",
+      '> ANTON: STILL EVERYWHERE (NORMAL) ✓',
+      '> FRANKA STATUS: PORTAL MASTERED ✓',
+      '> KIN: COMPLETE — ONE LETTER LEFT ✓',
+      '> CHAPTER 3: COMPLETE',
+    ];
+    const lv=Math.floor((vTimer-110)/12);
+    X.fillStyle='rgba(0,8,20,0.95)';X.fillRect(W/2-225,318,450,148);
+    X.strokeStyle='#aaddff';X.lineWidth=2;X.strokeRect(W/2-225,318,450,148);
+    X.fillStyle='#aaddff';X.fillRect(W/2-225,318,450,3);
+    X.font='bold 8px "Press Start 2P"';X.textAlign='left';X.textBaseline='top';
+    lines.slice(0,lv).forEach((l,i)=>{X.fillStyle=i>=lines.length-1?'#ffdd00':'#aaddff';X.fillText(l,W/2-213,332+i*19);
+      if(i===lv-1&&lv<=lines.length&&Math.floor(tick/20)%2===0)X.fillText('_',W/2-213+X.measureText(l).width+4,332+i*19);});}
+  if(vTimer>200){
+    const cr=chillHP>80?'LEGENDARY ★★★★★':chillHP>60?'EXCELLENT ★★★★':chillHP>40?'GOOD ★★★':chillHP>20?'OK ★★':'SURVIVED ★';
+    txt('FINAL SCORE: '+score.toString().padStart(6,'0'),W/2,490,13,'#ffdd00',{align:'center',baseline:'middle',shadow:'#ffdd00',bold:true});
+    txt('CHILL RATING: '+cr,W/2,517,10,'#aaddff',{align:'center',baseline:'middle',shadow:'#aaddff',bold:true});
+    txt('🎂 Happy Birthday Rene — 3 down, 1 to go! 🎂',W/2,545,9,'#aaccaa',{align:'center',baseline:'middle',bold:true});}
+}
+
+// ── INPUT ──────────────────────────────────────────────────
+C.addEventListener('click',e=>{getAC();const r=C.getBoundingClientRect();handleClick((e.clientX-r.left)*(W/r.width),(e.clientY-r.top)*(H/r.height));});
+document.addEventListener('keydown',e=>{if(e.code==='Space'){e.preventDefault();getAC();
+  if(phase==='intro'||phase==='battle'||phase==='lose'){handleClick(W/2,H-40);}}});
+
+function handleClick(mx,my){
+  if(phase==='title'){phase='intro';setDlg('intro');S.lofi();return;}
+  if(phase==='intro'){
+    if(dlgC){if(dlgCI<dlgC.tx.length)dlgCI=dlgC.tx.length;
+      else{advDlg();if(!dlgC){phase='battle';S.lofi();S.portalHum();antonSpawnTimer=30;antonChatTimer=200;}}}return;}
+  if(phase==='battle'){
+    // Check ticket click
+    if(ticketSpawned&&ticket&&!ticket.clicked){
+      const dx=mx-ticket.x,dy=my-(ticket.y+ticket.bob);
+      if(Math.abs(dx)<50&&Math.abs(dy)<40){
+        ticket.clicked=true;
+        sParts(ticket.x,ticket.y,'#ffdd00',30,6,7);
+        sPop(ticket.x,ticket.y-30,'TICKET CLAIMED!','#ffdd00');
+        S.ticket();
+        setTimeout(()=>trigWin(),900);return;}}
+    // Check Anton clicks
+    let hit=false;
+    activeAntons.forEach(a=>{
+      if(a.clicked)return;
+      const dx=mx-a.x,dy=my-(a.y-35);
+      if(dx*dx+dy*dy<45*45){
+        a.clicked=true;hit=true;
+        consultsCompleted++;score+=100*(1+Math.floor(consultsCompleted/3));
+        combo++;
+        sParts(a.x,a.y-30,'#aaddff',16,4,5);
+        const pt=combo>5?'⚡ x'+combo+'!':combo>3?'CONSULT!':'SYNCED!';
+        sPop(a.x,a.y-70,pt,'#aaddff');
+        S.click();S.consult();S.combo(combo-1);
+        portalLatency=Math.max(50,portalLatency-80);
+        chillHP=Math.min(100,chillHP+4);
+        pDlgT++;
+        if(pDlgT%3===0&&storyCount<DLG.story.length){pushDlg(DLG.story[storyCount%DLG.story.length]);storyCount++;}
+        // Trigger ticket spawn
+        if(consultsCompleted>=CONSULTS_NEEDED&&!ticketSpawned){
+          ticketSpawned=true;ticket={x:240,y:H-280,bob:0,clicked:false};
+          setDlg('ticket');S.ticket();
+          for(let i=0;i<25;i++)sParts(240,H-280,['#ffdd00','#aaddff'][Math.floor(Math.random()*2)],1,5,5);
+        }}});
+    if(!hit){combo=0;}
+    if(dlgC&&dlgCI>=dlgC.tx.length&&my>H-95)advDlg();
+    return;}
+  if(phase==='lose'){if(dlgC&&dlgCI<dlgC.tx.length)dlgCI=dlgC.tx.length;else if(dlgC)advDlg();return;}
+  if(phase==='victory'&&vTimer>270)return;
+}
+
+let storyCount=0;
+
+function trigWin(){
+  phase='victory';vTimer=0;fragCollected.push('N');S.win();setDlg('victory');
+  saveProgress('N');
+  for(let i=0;i<6;i++)setTimeout(()=>sParts(Math.random()*W,Math.random()*(H*.65),['#ffdd00','#aaddff','#ff6644'][Math.floor(Math.random()*3)],18,5,7),i*200);
+}
+function trigLose(){
+  phase='lose';loseTimer=0;S.lose();setDlg('lose');
+  for(let i=0;i<3;i++)setTimeout(()=>sParts(Math.random()*W,Math.random()*(H*.6),'#ff4444',12,4,5),i*150);
+}
+function resetGame(){
+  chillHP=100;score=0;combo=0;shake=0;portalLatency=200;consultsCompleted=0;
+  ticketSpawned=false;ticket=null;
+  vTimer=0;loseTimer=0;lofiT=0;pDlgT=0;storyCount=0;
+  activeAntons=[];P=[];PP=[];dlgC=null;dlgQ=[];fragCollected=[];
+  antonSpawnTimer=60;antonChatTimer=300;antonChats=[];
+  initBgAntons();
+}
+
+function updateButtons(){
+  const btnNext=document.getElementById('btn-next'),btnReplay=document.getElementById('btn-replay'),btnMenu=document.getElementById('btn-menu'),btnTry=document.getElementById('btn-tryagain'),hint=document.getElementById('click-hint');
+  btnNext.style.display=(phase==='victory'&&vTimer>240)?'block':'none';
+  btnReplay.style.display=(phase==='victory'&&vTimer>240)?'block':'none';
+  btnTry.style.display=(phase==='lose'&&loseTimer>200)?'block':'none';
+  btnMenu.style.display=phase==='title'?'none':'block';
+  hint.style.display=(phase==='battle'&&consultsCompleted===0&&activeAntons.length>0)?'block':'none';
+}
+
+// ── UPDATE ─────────────────────────────────────────────────
+function update(){
+  tick++;if(shake>0)shake-=.5;
+  if(phase==='battle'){
+    // Spawn active Antons
+    antonSpawnTimer++;
+    const maxConcurrent=consultsCompleted<3?1:consultsCompleted<7?2:3;
+    const spawnRate=Math.max(35,80-Math.floor(consultsCompleted/2)*4);
+    if(antonSpawnTimer>=spawnRate&&activeAntons.filter(a=>!a.clicked).length<maxConcurrent&&!ticketSpawned){
+      antonSpawnTimer=0;spawnActiveAnton();}
+    // Update active Antons
+    activeAntons.forEach(a=>{
+      if(!a.clicked){a.life--;
+        if(a.life<=0){a.clicked=true;
+          portalLatency=Math.min(maxLatency,portalLatency+90);
+          chillHP=Math.max(0,chillHP-7);shake=4;
+          sPop(a.x,a.y-30,'MISSED!','#ff4422');
+          S.miss();
+          if(chillHP<=0){trigLose();return;}}}});
+    activeAntons=activeAntons.filter(a=>!a.clicked||a.life>-30);
+    // Latency drift (slowly increases over time)
+    if(tick%30===0)portalLatency=Math.min(maxLatency,portalLatency+8);
+    if(chillHP<=0){trigLose();return;}
+    // Anton Teams chats (frequent in Ch3)
+    antonChatTimer++;
+    const acRate=consultsCompleted>5?160:240;
+    if(antonChatTimer>=acRate){antonChatTimer=0;spawnAntonChat();}
+    lofiT++;if(lofiT>=370){lofiT=0;S.lofi();}
+  }
+  uParts();updateButtons();
+}
+
+function render(){
+  X.save();if(shake>0)X.translate((Math.random()-.5)*shake*2,(Math.random()-.5)*shake*2);
+  X.clearRect(-12,-12,W+24,H+24);
+  if(phase==='title'){drawTitle();X.restore();return;}
+  if(phase==='intro'){drawIntroScene(tick);drawHUD();drawDlg();X.restore();return;}
+  if(phase==='battle'){drawBattleScene(tick);dParts();drawHUD();drawAntonChats();drawDlg();X.restore();return;}
+  if(phase==='lose'){drawBattleScene(tick);dParts();drawHUD();drawLose();drawDlg();X.restore();return;}
+  if(phase==='victory'){drawBattleScene(tick);dParts();drawHUD();drawVictory();drawDlg();X.restore();return;}
+  X.restore();
+}
+function loop(){update();render();requestAnimationFrame(loop);}
+initTS();initBgAntons();loop();
+</script>
+</body>
+</html>

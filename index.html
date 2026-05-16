@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>RENE: THE SOURCE-LIST CHRONICLES — Birthday Hub</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap');
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{background:#000;min-height:100vh;font-family:'Press Start 2P',monospace;color:#fff;overflow-x:hidden;}
+:root{
+  --c-cyan:#00ffcc;--c-green:#88ff44;--c-blue:#aaddff;--c-gold:#ffdd00;
+  --c-red:#ff4422;--c-bg:#020208;--c-bg2:#0a0420;--c-bg3:#1a0a30;
+}
+
+/* ── STARFIELD BACKDROP ─────────────────────────────────── */
+body{
+  background:
+    radial-gradient(ellipse at 20% 30%, rgba(0,255,200,.08), transparent 50%),
+    radial-gradient(ellipse at 80% 70%, rgba(255,221,0,.07), transparent 50%),
+    radial-gradient(ellipse at 50% 100%, rgba(255,68,34,.06), transparent 60%),
+    linear-gradient(180deg,#020208,#0a0420 50%,#020208);
+  background-attachment:fixed;
+}
+#stars,#stars2,#scan{position:fixed;inset:0;pointer-events:none;z-index:1;}
+#stars{
+  background-image:
+    radial-gradient(1px 1px at 12% 18%,#fff 50%,transparent),
+    radial-gradient(1px 1px at 78% 32%,#ffeeaa 50%,transparent),
+    radial-gradient(2px 2px at 35% 65%,#aaddff 50%,transparent),
+    radial-gradient(1px 1px at 92% 88%,#fff 50%,transparent),
+    radial-gradient(1px 1px at 8% 92%,#ffaaff 50%,transparent),
+    radial-gradient(1px 1px at 55% 12%,#fff 50%,transparent),
+    radial-gradient(2px 2px at 70% 78%,#ffdd00 50%,transparent),
+    radial-gradient(1px 1px at 22% 48%,#fff 50%,transparent),
+    radial-gradient(1px 1px at 88% 55%,#fff 50%,transparent),
+    radial-gradient(1px 1px at 45% 88%,#aaffcc 50%,transparent);
+  background-size:100% 100%;
+  animation:twinkle 6s infinite;
+}
+@keyframes twinkle{0%,100%{opacity:.85;}50%{opacity:.45;}}
+#scan{
+  background:repeating-linear-gradient(to bottom,transparent 0,transparent 3px,rgba(0,0,0,.08) 3px,rgba(0,0,0,.08) 4px);
+  z-index:50;
+}
+
+/* ── CRT VIGNETTE ──────────────────────────────────────── */
+#vig{position:fixed;inset:0;pointer-events:none;z-index:49;
+  background:radial-gradient(ellipse at 50% 50%,transparent 55%,rgba(0,0,0,.55) 100%);}
+
+/* ── LAYOUT ─────────────────────────────────────────────── */
+.hub{position:relative;z-index:5;max-width:1180px;margin:0 auto;padding:38px 24px 60px;}
+
+/* ── HERO ───────────────────────────────────────────────── */
+.hero{position:relative;text-align:center;padding:48px 20px 64px;}
+.hero::before{content:"";position:absolute;left:5%;right:5%;top:0;height:3px;
+  background:linear-gradient(90deg,transparent,var(--c-gold),transparent);
+  box-shadow:0 0 20px var(--c-gold);}
+.crown{font-size:54px;display:inline-block;animation:bounce 2.4s ease-in-out infinite;filter:drop-shadow(0 0 14px #ffdd00);}
+@keyframes bounce{0%,100%{transform:translateY(0) rotate(-2deg);}50%{transform:translateY(-10px) rotate(2deg);}}
+.eyebrow{font-size:9px;letter-spacing:4px;color:var(--c-gold);margin-top:10px;opacity:.85;}
+
+/* GIANT RENE TITLE with rainbow letter glow */
+.title{font-size:clamp(38px,7vw,76px);margin:14px 0 8px;letter-spacing:2px;line-height:1;}
+.title span{display:inline-block;text-shadow:0 0 14px currentColor,0 0 28px currentColor;animation:flick 4s infinite;}
+.title span:nth-child(1){color:var(--c-cyan);animation-delay:0s;}
+.title span:nth-child(2){color:var(--c-green);animation-delay:.5s;}
+.title span:nth-child(3){color:var(--c-blue);animation-delay:1s;}
+.title span:nth-child(4){color:var(--c-gold);animation-delay:1.5s;}
+@keyframes flick{0%,96%,100%{opacity:1;}97%{opacity:.4;}98%{opacity:1;}99%{opacity:.6;}}
+.subtitle{font-size:clamp(11px,1.6vw,16px);color:#fff;margin-top:6px;letter-spacing:3px;
+  text-shadow:0 0 10px #ffdd0088;}
+.chapter-line{margin-top:18px;font-size:9px;color:#aaccaa;letter-spacing:2px;}
+.chapter-line .dot{color:var(--c-gold);}
+.tag{display:inline-block;margin-top:24px;padding:10px 22px;
+  border:2px solid var(--c-gold);background:rgba(255,221,0,.08);
+  font-size:10px;color:var(--c-gold);letter-spacing:2px;
+  box-shadow:0 0 18px rgba(255,221,0,.25),inset 0 0 18px rgba(255,221,0,.08);}
+
+/* "KING" hidden background letters in hero */
+.hero-letters{position:absolute;inset:0;display:flex;align-items:center;justify-content:space-around;
+  font-size:clamp(80px,16vw,180px);opacity:.045;pointer-events:none;color:var(--c-gold);
+  font-family:'Press Start 2P',monospace;letter-spacing:.05em;z-index:-1;}
+.hero-letters span{animation:driftL 8s ease-in-out infinite;}
+.hero-letters span:nth-child(2){animation-delay:1s;}
+.hero-letters span:nth-child(3){animation-delay:2s;}
+.hero-letters span:nth-child(4){animation-delay:3s;}
+@keyframes driftL{0%,100%{transform:translateY(0);}50%{transform:translateY(-14px);}}
+
+/* ── SECTION HEADER ─────────────────────────────────────── */
+.section-head{display:flex;align-items:center;gap:14px;margin:30px 4px 22px;}
+.section-head .bar{flex:1;height:2px;background:linear-gradient(90deg,transparent,var(--c-gold) 30%,var(--c-gold) 70%,transparent);
+  box-shadow:0 0 10px var(--c-gold);}
+.section-head .label{font-size:11px;color:var(--c-gold);letter-spacing:3px;text-shadow:0 0 10px var(--c-gold);}
+
+/* ── CHAPTER GRID ───────────────────────────────────────── */
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:22px;}
+
+.card{
+  --c:var(--c-cyan);
+  position:relative;display:block;text-decoration:none;color:#fff;
+  background:rgba(2,4,18,.78);border:3px solid var(--c);
+  padding:22px 20px 20px;
+  box-shadow:0 0 22px color-mix(in srgb,var(--c) 30%,transparent),
+             inset 0 0 22px color-mix(in srgb,var(--c) 12%,transparent);
+  transition:transform .18s ease,box-shadow .18s ease;
+  overflow:hidden;cursor:pointer;
+}
+.card::before{content:"";position:absolute;inset:0;
+  background:repeating-linear-gradient(to bottom,transparent 0,transparent 3px,rgba(0,0,0,.06) 3px,rgba(0,0,0,.06) 4px);
+  pointer-events:none;}
+.card::after{content:"";position:absolute;top:0;left:0;right:0;height:3px;background:var(--c);
+  box-shadow:0 0 14px var(--c);}
+.card:hover{transform:translateY(-6px);
+  box-shadow:0 0 38px color-mix(in srgb,var(--c) 60%,transparent),
+             inset 0 0 30px color-mix(in srgb,var(--c) 20%,transparent);}
+.card:hover .ch-art{transform:scale(1.06);}
+.card:hover .play{background:var(--c);color:#000;}
+
+.card.c1{--c:#00ffcc;}
+.card.c2{--c:#88ff44;}
+.card.c3{--c:#aaddff;}
+.card.c4{--c:#ffdd00;}
+
+.card-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;}
+.ch-num{font-size:9px;color:var(--c);letter-spacing:3px;text-shadow:0 0 8px var(--c);}
+.ch-frag{font-size:18px;color:var(--c-gold);text-shadow:0 0 14px var(--c-gold);font-weight:bold;}
+
+/* Pixel art per chapter — drawn with CSS box-shadow as pixels would be too heavy,
+   so we use SVG inline instead */
+.ch-art{height:130px;margin:0 -20px 14px;display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(180deg,rgba(0,0,0,.5),rgba(0,0,0,.2));
+  position:relative;border-top:2px solid color-mix(in srgb,var(--c) 30%,transparent);
+  border-bottom:2px solid color-mix(in srgb,var(--c) 30%,transparent);
+  image-rendering:pixelated;transition:transform .3s ease;overflow:hidden;}
+.ch-art svg{image-rendering:pixelated;height:120px;width:auto;
+  filter:drop-shadow(0 0 6px color-mix(in srgb,var(--c) 60%,transparent));}
+
+.ch-title{font-size:12px;color:#fff;letter-spacing:1px;line-height:1.4;margin-bottom:8px;
+  text-shadow:0 0 6px var(--c);}
+.ch-time{font-size:8px;color:var(--c-red);letter-spacing:2px;margin-bottom:8px;}
+.ch-desc{font-family:'VT323',monospace;font-size:17px;line-height:1.25;color:#ccd6cc;margin-bottom:14px;min-height:64px;}
+.ch-tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;}
+.ch-tag{font-size:7px;padding:4px 8px;border:1px solid color-mix(in srgb,var(--c) 50%,transparent);
+  background:color-mix(in srgb,var(--c) 10%,transparent);color:var(--c);letter-spacing:1px;}
+
+.play{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;
+  border:2px solid var(--c);color:var(--c);background:rgba(0,0,0,.5);
+  font-size:9px;letter-spacing:2px;transition:all .15s ease;}
+.play .arr{font-size:12px;}
+
+/* "KING" tracker bar at bottom of each card */
+.frag-bar{display:flex;gap:6px;justify-content:center;margin-top:14px;
+  padding-top:12px;border-top:1px dashed color-mix(in srgb,var(--c) 30%,transparent);}
+.frag-bar span{font-size:14px;font-weight:bold;color:#2a2a3a;transition:color .3s,text-shadow .3s;}
+.frag-bar span.lit{color:var(--c-gold);text-shadow:0 0 10px var(--c-gold);}
+
+/* Card "completed" badge */
+.card.completed::before{content:"";}
+.card.completed{border-color:var(--c-gold);}
+.card .complete-badge{position:absolute;top:8px;right:8px;
+  background:var(--c-gold);color:#000;font-size:7px;letter-spacing:1px;
+  padding:4px 8px;display:none;z-index:5;
+  box-shadow:0 0 12px var(--c-gold);}
+.card.completed .complete-badge{display:block;animation:flickGold 3s infinite;}
+@keyframes flickGold{0%,100%{opacity:1;}50%{opacity:.7;}}
+
+/* King-tracker earned state */
+.king-tracker .letters span{color:#3a3a4a;text-shadow:none;transition:all .4s;animation:none;}
+.king-tracker .letters span.earned{color:var(--c-gold);
+  text-shadow:0 0 18px var(--c-gold),0 0 36px rgba(255,221,0,.5);
+  animation:pulseL 2.5s ease-in-out infinite;}
+
+/* Reset progress button */
+.reset-btn{display:none;margin-top:18px;background:transparent;
+  border:1px solid #ff442266;color:#ff6644;font-family:'Press Start 2P',monospace;
+  font-size:7px;padding:8px 14px;cursor:pointer;letter-spacing:2px;
+  transition:all .15s;}
+.reset-btn:hover{background:#ff4422;color:#000;box-shadow:0 0 12px #ff4422;}
+
+/* progress text */
+#progress-text{font-size:9px;color:#aaccaa;letter-spacing:2px;margin-top:14px;
+  text-align:center;text-transform:uppercase;}
+
+/* ── KING TRACKER ───────────────────────────────────────── */
+.king-tracker{margin:36px 0 12px;padding:22px;text-align:center;
+  background:linear-gradient(180deg,rgba(255,221,0,.05),rgba(255,221,0,.02));
+  border:2px dashed rgba(255,221,0,.35);}
+.king-tracker .label{font-size:9px;color:var(--c-gold);letter-spacing:3px;margin-bottom:14px;}
+.king-tracker .letters{display:flex;justify-content:center;gap:24px;flex-wrap:wrap;}
+.king-tracker .letters span{font-size:48px;color:var(--c-gold);
+  text-shadow:0 0 18px var(--c-gold),0 0 36px rgba(255,221,0,.5);
+  animation:pulseL 2.5s ease-in-out infinite;}
+.king-tracker .letters span:nth-child(2){animation-delay:.3s;}
+.king-tracker .letters span:nth-child(3){animation-delay:.6s;}
+.king-tracker .letters span:nth-child(4){animation-delay:.9s;}
+@keyframes pulseL{0%,100%{transform:translateY(0) scale(1);}50%{transform:translateY(-6px) scale(1.05);}}
+.king-tracker .sub{font-size:8px;color:#aaccaa;margin-top:14px;letter-spacing:2px;}
+
+/* ── FOOTER ─────────────────────────────────────────────── */
+.footer{margin-top:48px;text-align:center;padding:24px 12px;
+  border-top:2px solid rgba(255,221,0,.2);}
+.team-row{font-size:8px;color:#aaccdd;letter-spacing:2px;margin-bottom:10px;line-height:1.8;}
+.team-row .n{color:var(--c-gold);}
+.bday{font-size:14px;color:var(--c-gold);margin:14px 0;letter-spacing:3px;
+  text-shadow:0 0 18px var(--c-gold);}
+.tagline{font-size:7px;color:#5a7090;letter-spacing:2px;margin-top:10px;}
+
+/* ── MEDIA QUERIES ──────────────────────────────────────── */
+@media(max-width:520px){
+  .title{font-size:42px;letter-spacing:1px;}
+  .ch-art{height:110px;}
+  .king-tracker .letters span{font-size:36px;gap:16px;}
+  .hub{padding:24px 14px 40px;}
+  .hero{padding:30px 8px 40px;}
+}
+</style>
+</head>
+<body>
+<div id="stars"></div>
+<div id="vig"></div>
+<div id="scan"></div>
+
+<div class="hub">
+
+  <!-- ─── HERO ─── -->
+  <section class="hero">
+    <div class="hero-letters" aria-hidden="true"><span>K</span><span>I</span><span>N</span><span>G</span></div>
+    <div class="crown">👑</div>
+    <div class="eyebrow">★ A BIRTHDAY TRIBUTE GAME ★</div>
+    <h1 class="title">
+      <span>R</span><span>E</span><span>N</span><span>E</span>
+    </h1>
+    <div class="subtitle">THE SOURCE-LIST CHRONICLES</div>
+    <div class="chapter-line">
+      FOUR CHAPTERS <span class="dot">•</span> FOUR FRAGMENTS <span class="dot">•</span> ONE KING
+    </div>
+    <div class="tag">"In which a man drinks beer at 06:45 and calls it lunch"</div>
+  </section>
+
+  <!-- ─── CHAPTER SELECT ─── -->
+  <div class="section-head">
+    <span class="label">▼ SELECT CHAPTER</span>
+    <div class="bar"></div>
+  </div>
+
+  <div class="grid">
+
+    <!-- CHAPTER 1 -->
+    <a href="rene_game.html" class="card c1" data-ch="1">
+      <div class="complete-badge">✓ DONE</div>
+      <div class="card-head">
+        <div class="ch-num">CHAPTER 01</div>
+        <div class="ch-frag">K</div>
+      </div>
+      <div class="ch-art">
+        <!-- SVG: Rene at desk with beer at dawn -->
+        <svg viewBox="0 0 120 90" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges">
+          <rect width="120" height="90" fill="#040810"/>
+          <!-- floor grid -->
+          <g stroke="#0a1220" stroke-width=".5">
+            <line x1="0" y1="74" x2="120" y2="74"/>
+            <line x1="20" y1="74" x2="14" y2="90"/>
+            <line x1="50" y1="74" x2="48" y2="90"/>
+            <line x1="80" y1="74" x2="84" y2="90"/>
+            <line x1="110" y1="74" x2="116" y2="90"/>
+          </g>
+          <!-- monitor -->
+          <rect x="42" y="22" width="36" height="26" fill="#1c1c22"/>
+          <rect x="44" y="24" width="32" height="22" fill="#001a08"/>
+          <rect x="46" y="28" width="3" height="2" fill="#00ff44"/>
+          <rect x="51" y="28" width="3" height="2" fill="#00ff44"/>
+          <rect x="56" y="28" width="3" height="2" fill="#00ff44"/>
+          <rect x="46" y="32" width="3" height="2" fill="#00aa33"/>
+          <rect x="51" y="32" width="3" height="2" fill="#00aa33"/>
+          <rect x="56" y="32" width="3" height="2" fill="#00ff44"/>
+          <!-- desk -->
+          <rect x="30" y="48" width="60" height="4" fill="#5c3c1c"/>
+          <rect x="30" y="48" width="60" height="1" fill="#7a5c3c"/>
+          <!-- Rene (small) -->
+          <rect x="54" y="56" width="14" height="14" fill="#8caabb"/>
+          <rect x="55" y="42" width="12" height="11" fill="#ffd0a0"/>
+          <rect x="55" y="42" width="12" height="3" fill="#6c4624"/>
+          <rect x="55" y="45" width="12" height="2" fill="#f6f6f6"/>
+          <rect x="58" y="48" width="2" height="2" fill="#000"/>
+          <rect x="62" y="48" width="2" height="2" fill="#000"/>
+          <!-- beer -->
+          <rect x="76" y="44" width="4" height="8" fill="#ddaa00"/>
+          <rect x="76" y="42" width="4" height="2" fill="#fff"/>
+          <!-- eggs -->
+          <ellipse cx="44" cy="51" rx="4" ry="2" fill="#fffde2"/>
+          <!-- chill aura -->
+          <circle cx="61" cy="50" r="14" fill="none" stroke="#00ffcc" stroke-width=".5" opacity=".4"/>
+          <circle cx="61" cy="50" r="18" fill="none" stroke="#00ffcc" stroke-width=".5" opacity=".2"/>
+        </svg>
+      </div>
+      <div class="ch-title">THE PRE-DAWN PROTOCOL</div>
+      <div class="ch-time">⏰ 06:45 AM</div>
+      <div class="ch-desc">Beer at breakfast. Twelve questions from Alireza. The Red-Cell Hydra rises. Rene does not flinch.</div>
+      <div class="ch-tags">
+        <span class="ch-tag">CLICKER</span>
+        <span class="ch-tag">VS HYDRA</span>
+        <span class="ch-tag">CHILL</span>
+      </div>
+      <div class="play"><span>PLAY CHAPTER 1</span><span class="arr">▶</span></div>
+      <div class="frag-bar"><span class="lit">K</span><span>I</span><span>N</span><span>G</span></div>
+    </a>
+
+    <!-- CHAPTER 2 -->
+    <a href="rene_game_ch2.html" class="card c2" data-ch="2">
+      <div class="complete-badge">✓ DONE</div>
+      <div class="card-head">
+        <div class="ch-num">CHAPTER 02</div>
+        <div class="ch-frag">I</div>
+      </div>
+      <div class="ch-art">
+        <!-- SVG: Vincent with halo, Rene jumping baguette -->
+        <svg viewBox="0 0 120 90" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges">
+          <rect width="120" height="90" fill="#04140a"/>
+          <!-- floor -->
+          <rect x="0" y="72" width="120" height="18" fill="#0a1f10"/>
+          <line x1="0" y1="72" x2="120" y2="72" stroke="#1a3a20" stroke-width="1"/>
+          <!-- Rene jumping -->
+          <rect x="38" y="48" width="10" height="14" fill="#8caabb"/>
+          <rect x="39" y="38" width="8" height="10" fill="#ffd0a0"/>
+          <rect x="39" y="38" width="8" height="3" fill="#6c4624"/>
+          <rect x="39" y="41" width="8" height="2" fill="#f6f6f6"/>
+          <rect x="41" y="44" width="2" height="2" fill="#000"/>
+          <rect x="44" y="44" width="2" height="2" fill="#000"/>
+          <!-- legs (jumping pose) -->
+          <rect x="38" y="62" width="3" height="6" fill="#3c3c5c"/>
+          <rect x="45" y="62" width="3" height="6" fill="#3c3c5c"/>
+          <!-- motion lines -->
+          <line x1="32" y1="50" x2="38" y2="50" stroke="#88ff44" stroke-width="1" opacity=".7"/>
+          <line x1="30" y1="54" x2="38" y2="54" stroke="#88ff44" stroke-width="1" opacity=".5"/>
+          <!-- baguette flying -->
+          <ellipse cx="62" cy="68" rx="8" ry="2" fill="#dda866"/>
+          <rect x="58" y="66" width="2" height="1" fill="#aa6622"/>
+          <rect x="62" y="66" width="2" height="1" fill="#aa6622"/>
+          <rect x="66" y="66" width="2" height="1" fill="#aa6622"/>
+          <!-- Vincent with halo -->
+          <ellipse cx="86" cy="20" rx="10" ry="2" fill="none" stroke="#ffdd00" stroke-width="1.5"/>
+          <rect x="80" y="22" width="12" height="14" fill="#ffd0a0"/>
+          <rect x="79" y="21" width="14" height="5" fill="#2a1808"/>
+          <rect x="83" y="28" width="2" height="2" fill="#334"/>
+          <rect x="87" y="28" width="2" height="2" fill="#334"/>
+          <rect x="78" y="36" width="16" height="20" fill="#f0ede0"/>
+          <!-- Excalibar in Vincent's hand -->
+          <rect x="96" y="34" width="1" height="14" fill="#cccccc"/>
+          <rect x="94" y="32" width="5" height="3" fill="#ddaa00"/>
+          <line x1="96" y1="30" x2="96" y2="34" stroke="#ffee44" stroke-width="1"/>
+          <!-- Tennis ball flying -->
+          <circle cx="22" cy="56" r="2" fill="#ddaa00"/>
+        </svg>
+      </div>
+      <div class="ch-title">THE GODZILLA-JESUS PARADOX</div>
+      <div class="ch-time">⏰ 09:15 AM</div>
+      <div class="ch-desc">Vincent finds Excalibar. Alex scores a corner kick. Aditya brings a Ferrari. Reality bends. Rene jumps.</div>
+      <div class="ch-tags">
+        <span class="ch-tag">RUNNER</span>
+        <span class="ch-tag">JUMP &amp; DODGE</span>
+        <span class="ch-tag">TRUE STORIES</span>
+      </div>
+      <div class="play"><span>PLAY CHAPTER 2</span><span class="arr">▶</span></div>
+      <div class="frag-bar"><span class="lit">K</span><span class="lit">I</span><span>N</span><span>G</span></div>
+    </a>
+
+    <!-- CHAPTER 3 -->
+    <a href="rene_game_ch3.html" class="card c3" data-ch="3">
+      <div class="complete-badge">✓ DONE</div>
+      <div class="card-head">
+        <div class="ch-num">CHAPTER 03</div>
+        <div class="ch-frag">N</div>
+      </div>
+      <div class="ch-art">
+        <!-- SVG: portal with Anton ghosts -->
+        <svg viewBox="0 0 120 90" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges">
+          <rect width="120" height="90" fill="#040818"/>
+          <!-- portal (big blue ring) -->
+          <circle cx="60" cy="45" r="28" fill="none" stroke="#4488ff" stroke-width="2" opacity=".5"/>
+          <circle cx="60" cy="45" r="22" fill="none" stroke="#88ccff" stroke-width="2" opacity=".7"/>
+          <circle cx="60" cy="45" r="16" fill="rgba(68,136,255,0.2)"/>
+          <circle cx="60" cy="45" r="10" fill="rgba(170,221,255,0.3)"/>
+          <!-- Anton ghosts -->
+          <g opacity=".75">
+            <rect x="38" y="38" width="10" height="12" fill="#aabbcc"/>
+            <rect x="40" y="40" width="6" height="5" fill="#ddeeee"/>
+            <rect x="41" y="42" width="1" height="1" fill="#222"/>
+            <rect x="44" y="42" width="1" height="1" fill="#222"/>
+            <rect x="38" y="50" width="2" height="2" fill="#aabbcc"/>
+            <rect x="42" y="50" width="2" height="2" fill="#aabbcc"/>
+            <rect x="46" y="50" width="2" height="2" fill="#aabbcc"/>
+          </g>
+          <g opacity=".55">
+            <rect x="74" y="32" width="9" height="11" fill="#aabbcc"/>
+            <rect x="76" y="34" width="5" height="4" fill="#ddeeee"/>
+            <rect x="77" y="35" width="1" height="1" fill="#222"/>
+            <rect x="79" y="35" width="1" height="1" fill="#222"/>
+          </g>
+          <g opacity=".4">
+            <rect x="84" y="56" width="8" height="10" fill="#aabbcc"/>
+            <rect x="86" y="58" width="4" height="3" fill="#ddeeee"/>
+          </g>
+          <!-- Rene -->
+          <rect x="20" y="58" width="10" height="14" fill="#8caabb"/>
+          <rect x="21" y="48" width="8" height="10" fill="#ffd0a0"/>
+          <rect x="21" y="48" width="8" height="3" fill="#6c4624"/>
+          <rect x="21" y="51" width="8" height="2" fill="#f6f6f6"/>
+          <rect x="23" y="54" width="2" height="2" fill="#000"/>
+          <rect x="26" y="54" width="2" height="2" fill="#000"/>
+          <!-- Franka with tablet -->
+          <rect x="100" y="60" width="8" height="12" fill="#4a6448"/>
+          <rect x="101" y="52" width="6" height="8" fill="#ffd0a0"/>
+          <rect x="100" y="51" width="8" height="3" fill="#4a3020"/>
+          <rect x="102" y="55" width="1" height="1" fill="#222"/>
+          <rect x="105" y="55" width="1" height="1" fill="#222"/>
+          <rect x="98" y="64" width="12" height="6" fill="rgba(0,170,255,.4)" stroke="#00ccff" stroke-width=".3"/>
+          <!-- sparkles around portal -->
+          <rect x="42" y="20" width="2" height="2" fill="#aaddff"/>
+          <rect x="76" y="20" width="2" height="2" fill="#aaddff"/>
+          <rect x="84" y="70" width="2" height="2" fill="#aaddff"/>
+          <rect x="34" y="68" width="2" height="2" fill="#aaddff"/>
+        </svg>
+      </div>
+      <div class="ch-title">THE PORTAL TANGO</div>
+      <div class="ch-time">⏰ 14:30 PM</div>
+      <div class="ch-desc">Anton teleports through non-linear time. Franka guards the portal. Click the glowing one before he vanishes.</div>
+      <div class="ch-tags">
+        <span class="ch-tag">REACTION</span>
+        <span class="ch-tag">RAPID-CONSULT</span>
+        <span class="ch-tag">TELEPORT</span>
+      </div>
+      <div class="play"><span>PLAY CHAPTER 3</span><span class="arr">▶</span></div>
+      <div class="frag-bar"><span class="lit">K</span><span class="lit">I</span><span class="lit">N</span><span>G</span></div>
+    </a>
+
+    <!-- CHAPTER 4 -->
+    <a href="rene_game_ch4.html" class="card c4" data-ch="4">
+      <div class="complete-badge">✓ DONE</div>
+      <div class="card-head">
+        <div class="ch-num">CHAPTER 04 <span style="color:#ff4422;margin-left:4px">★FINAL★</span></div>
+        <div class="ch-frag">G</div>
+      </div>
+      <div class="ch-art">
+        <!-- SVG: Spreadsheet boss + golden rib -->
+        <svg viewBox="0 0 120 90" xmlns="http://www.w3.org/2000/svg" shape-rendering="crispEdges">
+          <rect width="120" height="90" fill="#180408"/>
+          <!-- nebula glow -->
+          <circle cx="60" cy="40" r="40" fill="rgba(170,68,221,.15)"/>
+          <!-- Spreadsheet boss body -->
+          <rect x="35" y="14" width="50" height="30" fill="#2a0808"/>
+          <rect x="35" y="14" width="50" height="2" fill="#4a1010"/>
+          <g stroke="#aa2222" stroke-width=".4">
+            <rect x="35" y="14" width="50" height="30" fill="none"/>
+            <line x1="45" y1="14" x2="45" y2="44"/>
+            <line x1="55" y1="14" x2="55" y2="44"/>
+            <line x1="65" y1="14" x2="65" y2="44"/>
+            <line x1="75" y1="14" x2="75" y2="44"/>
+            <line x1="35" y1="24" x2="85" y2="24"/>
+            <line x1="35" y1="34" x2="85" y2="34"/>
+          </g>
+          <text x="40" y="22" font-family="monospace" font-size="3" fill="#ff4422">#REF</text>
+          <text x="60" y="22" font-family="monospace" font-size="3" fill="#ffaa00">#NULL</text>
+          <text x="50" y="32" font-family="monospace" font-size="3" fill="#aa44aa">ERR!</text>
+          <text x="70" y="42" font-family="monospace" font-size="3" fill="#ff4422">#REF</text>
+          <!-- ghost heads -->
+          <g>
+            <rect x="44" y="6" width="8" height="8" fill="#eeccdd"/>
+            <rect x="46" y="9" width="1" height="1" fill="#ff0000"/>
+            <rect x="49" y="9" width="1" height="1" fill="#ff0000"/>
+            <rect x="46" y="11" width="4" height="1" fill="#000"/>
+          </g>
+          <g>
+            <rect x="56" y="4" width="8" height="8" fill="#eeccdd"/>
+            <rect x="58" y="7" width="1" height="1" fill="#ff0000"/>
+            <rect x="61" y="7" width="1" height="1" fill="#ff0000"/>
+            <rect x="58" y="9" width="4" height="1" fill="#000"/>
+          </g>
+          <g>
+            <rect x="68" y="6" width="8" height="8" fill="#eeccdd"/>
+            <rect x="70" y="9" width="1" height="1" fill="#ff0000"/>
+            <rect x="73" y="9" width="1" height="1" fill="#ff0000"/>
+            <rect x="70" y="11" width="4" height="1" fill="#000"/>
+          </g>
+          <!-- Golden rib at bottom -->
+          <rect x="48" y="60" width="24" height="14" fill="#ffdd00"/>
+          <rect x="48" y="60" width="24" height="2" fill="#ffee55"/>
+          <rect x="48" y="72" width="24" height="2" fill="#cc8800"/>
+          <rect x="50" y="64" width="2" height="6" fill="#fffacc"/>
+          <rect x="54" y="64" width="2" height="6" fill="#fffacc"/>
+          <rect x="58" y="64" width="2" height="6" fill="#fffacc"/>
+          <rect x="62" y="64" width="2" height="6" fill="#fffacc"/>
+          <rect x="66" y="64" width="2" height="6" fill="#fffacc"/>
+          <!-- Crown on top -->
+          <rect x="56" y="79" width="8" height="3" fill="#ffdd00"/>
+          <rect x="55" y="76" width="2" height="3" fill="#ffdd00"/>
+          <rect x="58" y="74" width="2" height="5" fill="#ffdd00"/>
+          <rect x="61" y="74" width="2" height="5" fill="#ffdd00"/>
+          <rect x="64" y="76" width="2" height="3" fill="#ffdd00"/>
+        </svg>
+      </div>
+      <div class="ch-title">THE FEAST OF THE GOLDEN RIB</div>
+      <div class="ch-time">⏰ 19:30 PM</div>
+      <div class="ch-desc">Deep Space Data-Verse. Three phases. Spreadsheet of Chaos. The final G awaits. THE KING IS CROWNED.</div>
+      <div class="ch-tags">
+        <span class="ch-tag">BOSS BATTLE</span>
+        <span class="ch-tag">3 PHASES</span>
+        <span class="ch-tag">FINALE</span>
+      </div>
+      <div class="play"><span>PLAY THE FINALE</span><span class="arr">▶</span></div>
+      <div class="frag-bar"><span class="lit">K</span><span class="lit">I</span><span class="lit">N</span><span>G</span></div>
+    </a>
+
+  </div>
+
+  <!-- ─── KING TRACKER ─── -->
+  <div class="king-tracker">
+    <div class="label">▼ DESTINY TRACKER ▼</div>
+    <div class="letters">
+      <span>K</span><span>I</span><span>N</span><span>G</span>
+    </div>
+    <div id="progress-text">NO FRAGMENTS COLLECTED YET — BEGIN WITH CHAPTER 1</div>
+    <div class="sub">FOUR FRAGMENTS • FOUR CHAPTERS • ONE LEGENDARY SENSEI</div>
+    <button class="reset-btn" id="reset-progress" onclick="clearProgress()">↻ RESET PROGRESS</button>
+  </div>
+
+  <!-- ─── FOOTER ─── -->
+  <footer class="footer">
+    <div class="team-row">
+      🎂 A BIRTHDAY TRIBUTE FOR <span class="n">RENE</span> — FROM YOUR WHOLE TEAM
+    </div>
+    <div class="team-row">
+      <span class="n">ALI</span> · <span class="n">VINCENT</span> · <span class="n">ALEX</span> · <span class="n">ADITYA</span> · <span class="n">FRANKA</span> · <span class="n">ANTON</span>
+    </div>
+    <div class="bday">🎉  HAPPY  BIRTHDAY,  SENSEI  🎉</div>
+    <div class="tagline">© BIRTHDAY DIVISION — SUPPLY CHAIN STUDIOS — DUTCH EDITION</div>
+  </footer>
+
+</div>
+
+<script>
+// ── PROGRESS PERSISTENCE ─────────────────────────────────
+const PROGRESS_KEY='rene-king-progress';
+function loadProgress(){try{return JSON.parse(localStorage.getItem(PROGRESS_KEY)||'{"letters":[],"scores":{}}');}catch(e){return{letters:[],scores:{}};}}
+function clearProgress(){if(confirm('Reset all progress? This cannot be undone.')){localStorage.removeItem(PROGRESS_KEY);location.reload();}}
+
+// Update UI based on saved progress
+function updateUIFromProgress(){
+  const p=loadProgress();
+  // Update card fragment trackers — show letters earned so far
+  document.querySelectorAll('.card').forEach(card=>{
+    const chNum=parseInt(card.dataset.ch);
+    const fragSpans=card.querySelectorAll('.frag-bar span');
+    // For each card, light up the letters that have been earned IN OR BEFORE this chapter
+    const letterMap=['K','I','N','G'];
+    fragSpans.forEach((s,i)=>{
+      const letter=letterMap[i];
+      // Light it up if collected globally
+      if(p.letters.includes(letter)){s.classList.add('lit');}else{s.classList.remove('lit');}
+    });
+    // Mark chapter "completed" if its letter is collected
+    const chLetter=letterMap[chNum-1];
+    if(p.letters.includes(chLetter)){
+      card.classList.add('completed');
+    }
+  });
+  // King tracker
+  document.querySelectorAll('.king-tracker .letters span').forEach((s,i)=>{
+    const letter=['K','I','N','G'][i];
+    if(p.letters.includes(letter)){s.classList.add('earned');}else{s.classList.remove('earned');}
+  });
+  // Progress text
+  const collected=p.letters.length;
+  const progEl=document.getElementById('progress-text');
+  if(progEl){
+    if(collected===0)progEl.textContent='NO FRAGMENTS COLLECTED YET — BEGIN WITH CHAPTER 1';
+    else if(collected===4)progEl.textContent='★ ALL FRAGMENTS COLLECTED — RENE IS THE KING ★';
+    else progEl.textContent=collected+' / 4 FRAGMENTS COLLECTED — '+(4-collected)+' TO GO';
+  }
+  // Show reset button if there's progress
+  const resetBtn=document.getElementById('reset-progress');
+  if(resetBtn)resetBtn.style.display=collected>0?'inline-block':'none';
+}
+
+// ── CLICK SFX ─────────────────────────────────────────────
+let ac=null;
+function getAC(){if(!ac)ac=new(window.AudioContext||window.webkitAudioContext)();return ac;}
+function ping(f,ty='sine',d=.1,v=.18){try{const a=getAC(),o=a.createOscillator(),g=a.createGain();
+  o.connect(g);g.connect(a.destination);o.type=ty;o.frequency.value=f;const t=a.currentTime;
+  g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(v,t+.01);g.gain.exponentialRampToValueAtTime(.001,t+d);
+  o.start(t);o.stop(t+d+.05);}catch(e){}}
+document.querySelectorAll('.card').forEach(c=>{
+  c.addEventListener('mouseenter',()=>ping(660,'square',.06,.1));
+  c.addEventListener('click',()=>{ping(880,'square',.06,.16);ping(1320,'sine',.12,.12);});
+});
+window.addEventListener('message',e=>{
+  if(e.data&&e.data.type==='GAME_COMPLETE')updateUIFromProgress();
+});
+
+// Run on load + refresh when page becomes visible again
+updateUIFromProgress();
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)updateUIFromProgress();});
+</script>
+</body>
+</html>
